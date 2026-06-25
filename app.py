@@ -59,6 +59,10 @@ SETTINGS_SCHEMA = [
         ('hero_image', 'Homepage Hero Image', '/static/img/hero.jpg'),
         ('story_image', 'Story / About Image', '/static/img/story.jpg'),
     ]),
+    ('Verification / Certificate', [
+        ('cert_image', 'Certificate Image (shown to customers as proof)', ''),
+        ('cert_label', 'Verification Label', 'Officially Verified'),
+    ]),
     ('Homepage Video', [
         ('hero_video', 'Homepage Video (optional — plays in the "In Motion" section)', ''),
     ]),
@@ -639,6 +643,33 @@ def order_track(code):
     return render_template('order_track.html', order=order, items=items, statuses=statuses)
 
 
+@app.route('/track', methods=['GET', 'POST'])
+def track():
+    """Public order tracking — anyone can check an order with its code + email/phone."""
+    if request.method == 'POST':
+        code = (request.form.get('code') or '').strip()
+        contact = (request.form.get('contact') or '').strip().lower()
+        db = get_db()
+        order = db.execute('SELECT * FROM orders WHERE order_code = ?', (code,)).fetchone()
+        if not order:
+            db.close()
+            return render_template('track.html', error='No order found with that code. Please check and try again.', code=code)
+        email = (order['guest_email'] or '').strip().lower()
+        phone = (order['guest_phone'] or '').strip().lower()
+        if order['user_id']:
+            u = db.execute('SELECT email FROM users WHERE id = ?', (order['user_id'],)).fetchone()
+            if u and u['email']:
+                email = u['email'].strip().lower()
+        items = db.execute('SELECT * FROM order_items WHERE order_id = ?', (order['id'],)).fetchall()
+        db.close()
+        if contact and (contact == email or contact == phone):
+            statuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered']
+            return render_template('order_track.html', order=order, items=items, statuses=statuses)
+        return render_template('track.html', code=code,
+                               error="The email/phone doesn't match this order. Use the same one you ordered with.")
+    return render_template('track.html')
+
+
 @app.route('/wishlist')
 @login_required
 def wishlist_page():
@@ -791,17 +822,18 @@ def order_create():
 
 
 @app.route('/api/receipt/upload', methods=['POST'])
-@login_required
 def receipt_upload():
+    # No login required — guests checking out must be able to upload their receipt too.
     if 'file' not in request.files or not request.files['file'].filename:
         return jsonify({'success': False, 'error': 'No file selected'}), 400
     f = request.files['file']
     ext = os.path.splitext(f.filename)[1].lower()
-    if ext not in ('.jpg', '.jpeg', '.png', '.webp', '.gif', '.pdf'):
+    if ext not in ('.jpg', '.jpeg', '.png', '.webp', '.gif', '.pdf', '.heic', '.heif'):
         return jsonify({'success': False, 'error': 'Upload an image or PDF of your receipt'}), 400
     folder = os.path.join('static', 'receipts')
     os.makedirs(folder, exist_ok=True)
-    name = f"receipt-{session['user_id']}-{random.randint(10000,99999)}{ext}"
+    uid = session.get('user_id', 'guest')
+    name = f"receipt-{uid}-{random.randint(10000,99999)}{ext}"
     f.save(os.path.join(folder, name))
     return jsonify({'success': True, 'path': f'/static/receipts/{name}'})
 
@@ -1064,6 +1096,20 @@ def paystack_verify_route():
 # --------------------------------------------------------------------------- #
 #  Admin panel
 # --------------------------------------------------------------------------- #
+@app.route('/api/admin/revenue/reset', methods=['POST'])
+@perm_required('dashboard')
+def admin_revenue_reset():
+    # Only the main (super) admin may wipe order/revenue data.
+    if user_role(current_user()) != 'admin':
+        return jsonify({'success': False, 'error': 'Only the main admin can reset revenue.'}), 403
+    db = get_db()
+    db.execute('DELETE FROM order_items')
+    db.execute('DELETE FROM orders')
+    db.commit()
+    db.close()
+    return jsonify({'success': True})
+
+
 @app.route('/admin')
 @perm_required('dashboard')
 def admin_dashboard():
@@ -1133,7 +1179,7 @@ def admin_upload():
     if not f.filename:
         return jsonify({'success': False, 'error': 'No file selected'}), 400
     ext = os.path.splitext(f.filename)[1].lower()
-    if ext not in ('.jpg', '.jpeg', '.png', '.webp', '.gif'):
+    if ext not in ('.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.heif'):
         return jsonify({'success': False, 'error': 'Please upload a JPG, PNG, WEBP or GIF'}), 400
     folder = os.path.join('static', 'img')
     os.makedirs(folder, exist_ok=True)

@@ -83,4 +83,23 @@
         {% else %}<p class="admin-empty">All products well stocked. 🌿</p>{% endif %}
     </div>
 </div>
+
+<div class="admin-card danger-zone" style="margin-top:22px">
+    <h3>⚠️ Reset Revenue</h3>
+    <p class="muted-sm" style="margin-bottom:14px">Clears all orders and sets revenue, order count and history back to zero. Useful after testing. <strong>This cannot be undone.</strong></p>
+    <button class="btn btn-sm" style="background:#c0392b;color:#fff" onclick="resetRevenue()">Reset Revenue & Clear Orders</button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function resetRevenue(){
+    if(!confirm('This permanently DELETES all orders and resets revenue to zero. Continue?')) return;
+    if(!confirm('Are you absolutely sure? All order records will be gone for good.')) return;
+    fetch('/api/admin/revenue/reset', {method:'POST'})
+        .then(r=>r.json()).then(d=>{
+            if(d.success){ toast('Revenue reset 🌿'); setTimeout(()=>location.reload(), 800); }
+            else toast(d.error || 'Could not reset');
+        });
+}
+</script>
 {% endblock %}

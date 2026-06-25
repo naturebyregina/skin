@@ -20,6 +20,7 @@
                 <a href="/shop">Shop</a>
                 <a href="/about">Our Story</a>
                 <a href="/blog">Journal</a>
+                <a href="/track">Track Order</a>
                 <a href="/contact">Contact</a>
             </nav>
             <div class="actions">
@@ -44,6 +45,7 @@
         <a href="/shop">Shop</a>
         <a href="/about">Our Story</a>
         <a href="/blog">Journal</a>
+        <a href="/track">Track Order</a>
         <a href="/contact">Contact</a>
         <a href="/wishlist">Wishlist</a>
         {% if session.get('user_id') %}
@@ -70,6 +72,11 @@
                         <a href="{{ site.social_facebook }}" aria-label="Facebook">📘</a>
                         <a href="{{ site.social_tiktok }}" aria-label="TikTok">🎵</a>
                     </div>
+                    {% if site.cert_image %}
+                    <a href="{{ site.cert_image }}" target="_blank" class="verified-badge" title="View our certificate">
+                        <span class="vb-check">✓</span> {{ site.cert_label or 'Verified' }}
+                    </a>
+                    {% endif %}
                 </div>
                 <div>
                     <h4>Shop</h4>
@@ -85,6 +92,7 @@
                     <ul>
                         <li><a href="/about">Our Story</a></li>
                         <li><a href="/blog">Journal</a></li>
+                        <li><a href="/track">Track Order</a></li>
                         <li><a href="/contact">Contact</a></li>
                         <li><a href="/faq">FAQ</a></li>
                     </ul>

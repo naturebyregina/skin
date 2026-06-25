@@ -750,6 +750,17 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--g
 .guest-note { background: var(--green-50); border: 1px solid var(--green-200); border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; font-size: 0.9rem; color: var(--green-900); }
 .guest-note a { color: var(--green-700); font-weight: 500; text-decoration: underline; }
 .order-note { background: #fef9ef; border: 1px solid #f0e3c8; color: #8a5a12; border-radius: 8px; padding: 6px 10px; margin-top: 6px; font-size: 0.82rem; }
+.danger-zone { border: 1px solid #f3c9c5; }
+.danger-zone h3 { color: #c0392b; }
+
+/* Verification badge + certificate */
+.verified-badge { display: inline-flex; align-items: center; gap: 8px; margin-top: 20px; background: rgba(255,255,255,0.08); border: 1px solid rgba(201,167,99,0.5); color: #fff; padding: 8px 16px; border-radius: 30px; font-size: 0.82rem; letter-spacing: 0.5px; transition: all 0.3s var(--ease); }
+.verified-badge:hover { background: var(--gold-500); border-color: var(--gold-500); color: #fff; transform: translateY(-2px); }
+.verified-badge .vb-check { width: 20px; height: 20px; border-radius: 50%; background: var(--green-600); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; }
+.cert-display { display: block; max-width: 560px; margin: 40px auto 0; border-radius: 18px; overflow: hidden; box-shadow: var(--shadow-md); position: relative; border: 1px solid var(--beige-200); }
+.cert-display img { width: 100%; display: block; }
+.cert-display .cert-zoom { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, rgba(0,0,0,0.6), transparent); color: #fff; text-align: center; padding: 20px 0 12px; font-size: 0.85rem; opacity: 0; transition: opacity 0.3s var(--ease); }
+.cert-display:hover .cert-zoom { opacity: 1; }
 
 /* ===================================================================
    CARD STUDIO (invitation / ID cards)

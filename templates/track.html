@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Track Your Order — Nature by Regina{% endblock %}
+{% block content %}
+
+<section class="page-head">
+    <div class="container">
+        <span class="eyebrow">Order Status</span>
+        <h1>Track Your Order</h1>
+        <p class="section-lead">Enter your order code and the email or phone you used at checkout.</p>
+    </div>
+</section>
+
+<section class="section" style="padding-top:50px">
+    <div class="container">
+        <div class="auth-card reveal" style="margin:0 auto;max-width:480px">
+            <form method="POST" action="/track">
+                <div class="field">
+                    <label>Order Code</label>
+                    <input name="code" value="{{ code or '' }}" placeholder="NBR-2026-12345" required>
+                </div>
+                <div class="field">
+                    <label>Email or Phone</label>
+                    <input name="contact" placeholder="the email or phone you ordered with" required>
+                </div>
+                {% if error %}<div class="form-error">{{ error }}</div>{% endif %}
+                <button type="submit" class="btn btn-primary btn-block">Track Order</button>
+            </form>
+            <div class="form-foot">Your order code is in your confirmation message (starts with <strong>NBR-</strong>).</div>
+        </div>
+    </div>
+</section>
+{% endblock %}
