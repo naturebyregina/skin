@@ -1,0 +1,99 @@
+{% extends "admin/admin_base.html" %}
+{% set active = 'team' %}
+{% block title %}Team — Admin{% endblock %}
+{% block heading %}Team / Sub-admins{% endblock %}
+{% block content %}
+
+<p class="muted-sm" style="margin-bottom:22px;max-width:640px">Add sub-admins and switch each section On/Off for them. They sign in at <strong>/login</strong> with the email & password you set and only see what you allow.</p>
+
+<div class="admin-grid-2">
+    <div class="admin-card">
+        <h3 id="form-title">Add a Sub-admin</h3>
+        <form onsubmit="saveSub(event)">
+            <input type="hidden" id="s-id" value="">
+            <div class="field"><label>Name</label><input id="s-name" required></div>
+            <div class="field" id="email-field"><label>Email</label><input id="s-email" type="email"></div>
+            <div class="field"><label>Password <span class="muted-sm" id="pw-hint"></span></label><input id="s-pass" type="password" autocomplete="new-password"></div>
+            <label style="display:block;font-size:0.74rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Allowed sections <span class="muted-sm" style="text-transform:none;letter-spacing:0">— tap to turn on</span></label>
+            <div class="chip-select" id="perm-grid">
+                {% for key, label in sections %}
+                {% if key != 'team' %}
+                <label class="perm-chip"><input type="checkbox" value="{{ key }}" class="perm-cb"><span>{{ label }}</span></label>
+                {% endif %}
+                {% endfor %}
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px">
+                <button type="submit" class="btn btn-primary">Save Sub-admin</button>
+                <button type="button" class="btn btn-outline" onclick="resetSub()">Clear</button>
+            </div>
+            <div class="form-error" id="error"></div>
+        </form>
+    </div>
+
+    <div class="admin-card">
+        <h3>Sub-admins ({{ subs|length }})</h3>
+        {% if subs %}
+        <div class="sub-list">
+            {% for s in subs %}
+            <div class="sub-item" id="sub-{{ s.id }}">
+                <div class="sub-head">
+                    <strong>{{ s.first_name }}</strong>
+                    <span class="muted-sm">{{ s.email }}</span>
+                </div>
+                <div class="chip-select">
+                    {% for key, label in sections %}
+                    {% if key != 'team' %}
+                    <label class="perm-chip"><input type="checkbox" data-uid="{{ s.id }}" value="{{ key }}" {{ 'checked' if key in s.perm_list }} onchange="togglePerm({{ s.id }})"><span>{{ label }}</span></label>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="sub-actions">
+                    <button class="link-edit" onclick='editSub({{ s.id }}, {{ s.first_name|tojson }}, {{ s.email|tojson }})'>Reset password</button>
+                    <button class="link-del" onclick="delSub({{ s.id }})">Remove</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}<p class="admin-empty">No sub-admins yet.</p>{% endif %}
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function resetSub(){
+    ['s-id','s-name','s-email','s-pass'].forEach(i=>document.getElementById(i).value='');
+    document.querySelectorAll('#perm-grid .perm-cb').forEach(c=>c.checked=false);
+    document.getElementById('email-field').style.display='';
+    document.getElementById('form-title').textContent='Add a Sub-admin';
+    document.getElementById('pw-hint').textContent='';
+}
+function editSub(id, name, email){
+    document.getElementById('s-id').value=id;
+    document.getElementById('s-name').value=name;
+    document.getElementById('s-email').value=email;
+    document.getElementById('email-field').style.display='none';
+    document.getElementById('pw-hint').textContent='(leave blank to keep current)';
+    document.getElementById('form-title').textContent='Update '+name;
+    window.scrollTo({top:0,behavior:'smooth'});
+}
+function saveSub(e){
+    e.preventDefault();
+    const id = document.getElementById('s-id').value;
+    const perms = [...document.querySelectorAll('#perm-grid .perm-cb:checked')].map(c=>c.value);
+    const body = {id:id||null, name:document.getElementById('s-name').value,
+        email:document.getElementById('s-email').value, password:document.getElementById('s-pass').value, permissions:perms};
+    fetch('/api/admin/team/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+        .then(r=>r.json()).then(d=>{ if(d.success){ toast('Saved 🌿'); setTimeout(()=>location.reload(),600);} else document.getElementById('error').textContent=d.error; });
+}
+function togglePerm(uid){
+    const perms = [...document.querySelectorAll('input[data-uid="'+uid+'"]:checked')].map(c=>c.value);
+    fetch('/api/admin/team/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:uid, permissions:perms})})
+        .then(r=>r.json()).then(d=>{ if(d.success) toast('Permissions updated'); });
+}
+function delSub(id){
+    if(!confirm('Remove this sub-admin?')) return;
+    fetch('/api/admin/team/'+id+'/delete',{method:'POST'})
+        .then(r=>r.json()).then(d=>{ if(d.success){ document.getElementById('sub-'+id).remove(); toast('Removed'); } });
+}
+</script>
+{% endblock %}

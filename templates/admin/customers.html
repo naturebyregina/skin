@@ -13,13 +13,13 @@
         <tbody>
         {% for c in customers %}
         <tr>
-            <td><strong>{{ c.first_name }} {{ c.last_name }}</strong></td>
-            <td class="muted-sm">{{ c.email }}</td>
-            <td><span class="tier-tag">{{ c.loyalty_tier or 'Bronze' }}</span></td>
-            <td>{{ c.loyalty_points }}</td>
-            <td>{{ c.order_count }}</td>
-            <td>₦{{ "{:,.0f}".format(c.spent) }}</td>
-            <td class="muted-sm">{{ c.created_at[:10] }}</td>
+            <td data-label="Name"><strong>{{ c.first_name }} {{ c.last_name }}</strong></td>
+            <td data-label="Email" class="muted-sm">{{ c.email }}</td>
+            <td data-label="Tier"><span class="tier-tag">{{ c.loyalty_tier or 'Bronze' }}</span></td>
+            <td data-label="Points">{{ c.loyalty_points }}</td>
+            <td data-label="Orders">{{ c.order_count }}</td>
+            <td data-label="Spent">{{ site.currency_symbol }}{{ "{:,.0f}".format(c.spent) }}</td>
+            <td data-label="Joined" class="muted-sm">{{ c.created_at[:10] }}</td>
         </tr>
         {% endfor %}
         </tbody>

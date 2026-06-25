@@ -6,6 +6,7 @@
         <span class="eyebrow">Join the family</span>
         <h1>Create Account</h1>
         <p>Earn loyalty points, save favourites and track orders.</p>
+        <div class="guest-note" id="ref-banner" style="display:none">🎁 You were referred by a friend — welcome! Enjoy {{ site.referral_offer }}.</div>
         <form onsubmit="handleRegister(event)">
             <div class="row-2">
                 <div class="field"><label>First Name</label><input type="text" id="first_name" required></div>
@@ -19,4 +20,9 @@
         <div class="form-foot">Already have an account? <a href="/login">Sign in</a></div>
     </div>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+if (new URLSearchParams(location.search).get('ref')) document.getElementById('ref-banner').style.display = 'block';
+</script>
 {% endblock %}

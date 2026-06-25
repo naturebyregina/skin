@@ -40,7 +40,7 @@
             </div>
         </div>
         <div class="row-2">
-            <div class="field"><label>Price (₦)</label><input id="price" type="number" step="50" value="{{ product.price|int if product else '' }}" required></div>
+            <div class="field"><label>Price ({{ site.currency_symbol }})</label><input id="price" type="number" step="50" value="{{ product.price|int if product else '' }}" required></div>
             <div class="field"><label>Stock</label><input id="stock" type="number" value="{{ product.stock if product else 10 }}" required></div>
         </div>
         <div class="field"><label>Badge (optional)</label><input id="badge" value="{{ product.badge if product and product.badge else '' }}" placeholder="Bestseller, New, Loved…"></div>

@@ -1,0 +1,144 @@
+{% extends "admin/admin_base.html" %}
+{% set active = 'cards' %}
+{% block title %}Card Studio — Admin{% endblock %}
+{% block heading %}Card Studio{% endblock %}
+{% block content %}
+
+<p class="muted-sm" style="margin-bottom:20px;max-width:660px">Generate an invitation or ID card with a photo, customise it, then download it as PNG/PDF or save it to get a shareable online link.</p>
+
+<div class="card-studio">
+    <div class="admin-card cs-form">
+        <div class="field"><label>Card Type</label>
+            <select id="c-type" onchange="onType()">
+                <option value="invitation">🎟️ Invitation Card</option>
+                <option value="id">🪪 ID / Membership Card</option>
+            </select>
+        </div>
+        <div class="row-2">
+            <div class="field"><label id="lbl-title">Header</label><input id="c-title" oninput="render()" placeholder="You're Invited"></div>
+            <div class="field"><label>Accent Colour</label>
+                <div class="color-field"><input type="color" id="c-color" value="#2d5a3d" oninput="render()"><input type="text" class="color-hex" value="#2d5a3d" oninput="document.getElementById('c-color').value=this.value; render()"></div>
+            </div>
+        </div>
+        <div class="field"><label id="lbl-name">Name / Title</label><input id="c-name" oninput="render()" placeholder="Event or member name"></div>
+        <div class="row-2">
+            <div class="field"><label id="lbl-l1">Line 1</label><input id="c-l1" oninput="render()"></div>
+            <div class="field"><label id="lbl-l2">Line 2</label><input id="c-l2" oninput="render()"></div>
+        </div>
+        <div class="row-2">
+            <div class="field"><label id="lbl-l3">Line 3</label><input id="c-l3" oninput="render()"></div>
+            <div class="field" id="msg-field"><label>Message</label><input id="c-msg" oninput="render()" placeholder="Short note"></div>
+        </div>
+        <div class="field">
+            <label>Photo</label>
+            <div class="img-field">
+                <div class="img-preview sm" id="c-photo-prev"><span class="ph">📷</span></div>
+                <div>
+                    <label class="btn btn-outline btn-sm" style="cursor:pointer">Upload Photo<input type="file" accept="image/*" style="display:none" onchange="uploadCardPhoto(this)"></label>
+                    <input type="hidden" id="c-photo" value="">
+                    <p class="muted-sm" id="c-photo-st" style="margin-top:6px">JPG or PNG</p>
+                </div>
+            </div>
+        </div>
+        <div class="cs-actions">
+            <button class="btn btn-primary btn-sm" onclick="saveCard()">🔗 Save & get share link</button>
+            <button class="btn btn-outline btn-sm" onclick="cardDownloadPNG(document.getElementById('card-render'), cardName())">⬇ PNG</button>
+            <button class="btn btn-outline btn-sm" onclick="cardDownloadPDF(document.getElementById('card-render'), cardName())">⬇ PDF</button>
+        </div>
+        <div id="share-box" class="share-box" style="display:none"></div>
+    </div>
+
+    <div class="admin-card cs-preview">
+        <h3 style="margin-bottom:16px">Live Preview</h3>
+        <div class="cs-stage"><div id="card-render" class="card-render card-invite"></div></div>
+    </div>
+</div>
+
+{% if recent %}
+<div class="admin-card" style="margin-top:22px">
+    <h3>Saved Cards</h3>
+    <table class="admin-table">
+        <thead><tr><th>Type</th><th>Title</th><th>Link</th><th></th></tr></thead>
+        <tbody>
+        {% for c in recent %}
+        <tr id="card-row-{{ c.id }}">
+            <td>{{ '🪪 ID' if c.type == 'id' else '🎟️ Invitation' }}</td>
+            <td>{{ c.title or c.parsed.get('name','Card') }}</td>
+            <td><a href="/card/{{ c.token }}" target="_blank">/card/{{ c.token }}</a></td>
+            <td class="row-actions">
+                <button class="link-edit" onclick="copyShare('{{ c.token }}')">Copy</button>
+                <button class="link-del" onclick="delCard({{ c.id }})">Delete</button>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="{{ url_for('static', filename='card.js') }}"></script>
+<script>
+const LOGO = "{{ site.logo_image }}";
+const BRAND = "{{ site.brand_name }}";
+let CURTOKEN = "";
+
+function cardData(){
+    return {
+        brand: BRAND, logo: LOGO, color: document.getElementById('c-color').value,
+        title: document.getElementById('c-title').value, name: document.getElementById('c-name').value,
+        line1: document.getElementById('c-l1').value, line2: document.getElementById('c-l2').value,
+        line3: document.getElementById('c-l3').value, message: document.getElementById('c-msg').value,
+        photo: document.getElementById('c-photo').value
+    };
+}
+function cardName(){ return (document.getElementById('c-name').value || 'card').replace(/[^a-z0-9]+/gi,'-').toLowerCase(); }
+function render(){ buildCard(document.getElementById('card-render'), cardData(), document.getElementById('c-type').value); }
+
+function onType(){
+    const id = document.getElementById('c-type').value === 'id';
+    document.getElementById('lbl-title').textContent = id ? 'Badge Text' : 'Header';
+    document.getElementById('c-title').placeholder = id ? 'VIP MEMBER' : "You're Invited";
+    document.getElementById('lbl-name').textContent = id ? 'Member Name' : 'Event Name';
+    document.getElementById('lbl-l1').textContent = id ? 'ID Number' : 'Date';
+    document.getElementById('lbl-l2').textContent = id ? 'Tier / Role' : 'Venue';
+    document.getElementById('lbl-l3').textContent = id ? 'Valid Through' : 'Time';
+    document.getElementById('msg-field').style.display = id ? 'none' : '';
+    render();
+}
+function uploadCardPhoto(input){
+    const f = input.files[0]; if(!f) return;
+    const st = document.getElementById('c-photo-st'); st.textContent = 'Uploading…';
+    const fd = new FormData(); fd.append('file', f);
+    fetch('/api/admin/upload', {method:'POST', body: fd}).then(r=>r.json()).then(d=>{
+        if(d.success){ document.getElementById('c-photo').value = d.path;
+            document.getElementById('c-photo-prev').innerHTML = `<img src="${d.path}">`; st.textContent='✓ Added'; render(); }
+        else st.textContent = d.error || 'Failed';
+    });
+}
+function saveCard(){
+    const type = document.getElementById('c-type').value;
+    fetch('/api/admin/card/save', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({token: CURTOKEN, type: type, title: document.getElementById('c-name').value, card: cardData()})})
+        .then(r=>r.json()).then(d=>{
+            if(d.success){
+                CURTOKEN = d.token;
+                const full = location.origin + d.url;
+                document.getElementById('share-box').style.display = 'block';
+                document.getElementById('share-box').innerHTML =
+                    `✅ Shareable link: <a href="${d.url}" target="_blank">${full}</a>
+                     <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText('${full}');toast('Link copied')">Copy</button>
+                     <a class="btn btn-outline btn-sm" target="_blank" href="https://wa.me/?text=${encodeURIComponent(full)}">WhatsApp</a>`;
+                toast('Saved 🌿');
+            } else toast(d.error || 'Could not save');
+        });
+}
+function copyShare(token){ navigator.clipboard.writeText(location.origin + '/card/' + token); toast('Link copied'); }
+function delCard(id){ if(!confirm('Delete this card?')) return;
+    fetch('/api/admin/card/'+id+'/delete', {method:'POST'}).then(r=>r.json()).then(d=>{ if(d.success){ document.getElementById('card-row-'+id).remove(); toast('Deleted'); } }); }
+
+onType();
+</script>
+{% endblock %}

@@ -13,18 +13,23 @@
         <tbody>
         {% for o in orders %}
         <tr>
-            <td><strong>{{ o.order_code }}</strong></td>
-            <td>{{ o.first_name or 'Guest' }} {{ o.last_name or '' }}<br><span class="muted-sm">{{ o.email or '' }}</span></td>
-            <td class="muted-sm">{{ o.created_at[:16] }}</td>
-            <td>{{ o.shipping_method }}<br><span class="muted-sm">{{ o.payment_method }}</span></td>
-            <td class="admin-receipt">
+            <td data-label="Order"><strong>{{ o.order_code }}</strong></td>
+            <td data-label="Customer">
+                <strong>{{ o.first_name or o.guest_name or 'Guest' }} {{ o.last_name or '' }}</strong>
+                <div class="muted-sm">{{ o.email or o.guest_email or '' }}</div>
+                {% if o.guest_phone %}<div class="muted-sm">📞 {{ o.guest_phone }}</div>{% endif %}
+                {% if o.note %}<div class="order-note">📝 {{ o.note }}</div>{% endif %}
+            </td>
+            <td data-label="Date" class="muted-sm">{{ o.created_at[:16] }}</td>
+            <td data-label="Method">{{ o.shipping_method }}<br><span class="muted-sm">{{ o.payment_method }}</span></td>
+            <td data-label="Receipt" class="admin-receipt">
                 {% if o.receipt_path %}
                     {% if o.receipt_path.endswith('.pdf') %}<a href="{{ o.receipt_path }}" target="_blank">📄 View PDF</a>
                     {% else %}<a href="{{ o.receipt_path }}" target="_blank"><img src="{{ o.receipt_path }}" alt="receipt"></a>{% endif %}
                 {% else %}<span class="none">—</span>{% endif %}
             </td>
-            <td>₦{{ "{:,.0f}".format(o.total) }}</td>
-            <td>
+            <td data-label="Total">{{ site.currency_symbol }}{{ "{:,.0f}".format(o.total) }}</td>
+            <td data-label="Status">
                 <select class="status-select status-{{ o.status }}" onchange="setStatus({{ o.id }}, this)">
                     {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if o.status == s }}>{{ s }}</option>{% endfor %}
                 </select>

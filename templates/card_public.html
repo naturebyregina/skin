@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ card.get('name', 'Your Card') }} — {{ card.get('brand', 'Nature by Regina') }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="card-page">
+    <div class="card-page-inner">
+        <div class="cs-stage"><div id="card-render" class="card-render"></div></div>
+        <div class="card-page-actions">
+            <button class="btn btn-primary btn-sm" onclick="cardDownloadPNG(document.getElementById('card-render'), 'card')">⬇ Download PNG</button>
+            <button class="btn btn-outline btn-sm" onclick="cardDownloadPDF(document.getElementById('card-render'), 'card')">⬇ Download PDF</button>
+            <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText(location.href); this.textContent='✓ Link copied'">🔗 Copy link</button>
+            <a class="btn btn-outline btn-sm" target="_blank" id="wa-btn">💬 WhatsApp</a>
+        </div>
+        <a href="/" class="card-page-foot">Made with 🌿 {{ card.get('brand', 'Nature by Regina') }}</a>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="{{ url_for('static', filename='card.js') }}"></script>
+<script>
+const CARD = {{ card|tojson }};
+const CTYPE = {{ ctype|tojson }};
+buildCard(document.getElementById('card-render'), CARD, CTYPE);
+document.getElementById('wa-btn').href = 'https://wa.me/?text=' + encodeURIComponent(location.href);
+</script>
+</body>
+</html>

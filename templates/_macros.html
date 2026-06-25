@@ -17,7 +17,7 @@
         <h3><a href="/product/{{ p.slug }}">{{ p.name }}</a></h3>
         <span class="stars">{{ '★' * (p.rating|round(0,'floor')|int) }}{{ '☆' * (5 - (p.rating|round(0,'floor')|int)) }} <span style="color:var(--muted)">{{ p.rating }}</span></span>
         <div class="row">
-            <span class="price">₦{{ "{:,.0f}".format(p.price) }}</span>
+            <span class="price">{{ cur_symbol() }}{{ "{:,.0f}".format(p.price) }}</span>
             <button class="add" onclick="addCart({{ p.id }})" aria-label="Add to cart">+</button>
         </div>
     </div>

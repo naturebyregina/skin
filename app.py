@@ -37,6 +37,23 @@ SETTINGS_SCHEMA = [
         ('tagline', 'Tagline', '…Treat yourself, stay healthy.'),
         ('promo_text', 'Top Promo Bar', '✦ Free shipping on orders over ₦80,000 · Handcrafted in small batches ✦'),
     ]),
+    ('Features — turn on / off', [
+        ('enable_card', 'Online Card Payment / Paystack  ·  (PAID host)', '0'),
+        ('enable_bank', 'Bank Transfer  ·  (FREE)', '1'),
+        ('enable_pod', 'Pay on Delivery  ·  (FREE)', '1'),
+        ('enable_email', 'Order Confirmation Emails  ·  (PAID host)', '0'),
+        ('enable_telegram', 'Telegram Order Alerts  ·  (PAID host)', '0'),
+        ('enable_video', 'Ad Studio AI video generation  ·  (PAID)', '0'),
+        ('enable_chat', "Regina's Team Chat Widget  ·  (FREE)", '1'),
+    ]),
+    ('Currency', [
+        ('currency_symbol', 'Currency Symbol  (₦, $, £, €)', '₦'),
+        ('currency_code', 'Currency Code  (NGN, USD, GBP, EUR — also used by Paystack)', 'NGN'),
+    ]),
+    ('Referral Program', [
+        ('referral_reward', 'Points earned per successful referral', '250'),
+        ('referral_offer', 'Offer shown on the referral card', '10% off your first order'),
+    ]),
     ('Images', [
         ('logo_image', 'Logo', '/static/img/logo.jpg'),
         ('hero_image', 'Homepage Hero Image', '/static/img/hero.jpg'),
@@ -55,23 +72,19 @@ SETTINGS_SCHEMA = [
          'Access Bank | Nature by Regina | 0123456789'),
         ('free_ship_threshold', 'Free Shipping Over (₦)', '80000'),
     ]),
-    ('Payment Keys (Paystack)', [
+    ('Payment Keys (Paystack)  ·  (PAID host)', [
         ('paystack_public', 'Paystack Public Key', ''),
         ('paystack_secret', 'Paystack Secret Key', ''),
     ]),
-    ('Email (SMTP)', [
-        ('smtp_host', 'SMTP Host', ''),
-        ('smtp_port', 'SMTP Port', '587'),
-        ('smtp_user', 'SMTP Username', ''),
-        ('smtp_pass', 'SMTP Password', ''),
-        ('smtp_from', 'From Email', ''),
+    ('Email (SMTP)  ·  (PAID host) — add several, system tries each', [
+        ('smtp_accounts', 'SMTP Accounts (one per line: host | port | user | password | from-email)', ''),
         ('notify_email', 'Admin Notify Email', ''),
     ]),
-    ('Telegram Alerts', [
+    ('Telegram Alerts  ·  (PAID host)', [
         ('telegram_token', 'Bot Token', ''),
         ('telegram_chat', 'Chat ID', ''),
     ]),
-    ('Ad Studio (Image → Video)', [
+    ('Ad Studio (Image → Video)  ·  (PAID API)', [
         ('video_provider', 'Provider: replicate / huggingface / google (Veo)', 'replicate'),
         ('video_api_key', 'Video API Key', ''),
         ('video_model', 'Model slug/version (optional)', ''),
@@ -94,6 +107,14 @@ SETTINGS_SCHEMA = [
     ]),
 ]
 DEFAULT_SETTINGS = {k: v for _, fields in SETTINGS_SCHEMA for k, _, v in fields}
+
+# Admin sections a sub-admin can be granted access to
+ADMIN_SECTIONS = [
+    ('dashboard', 'Dashboard'), ('products', 'Products'), ('orders', 'Orders'),
+    ('customers', 'Customers'), ('testimonials', 'Testimonials'), ('media', 'Media Library'),
+    ('ads', 'Ad Studio'), ('cards', 'Card Studio'), ('chats', 'Chat Logs'),
+    ('settings', 'Site Settings'), ('team', 'Team / Sub-admins'),
+]
 
 # Loyalty tiers: name -> (min points, perk)
 LOYALTY_TIERS = [
@@ -157,6 +178,9 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS testimonials (
         id INTEGER PRIMARY KEY, author TEXT NOT NULL, role TEXT, rating REAL DEFAULT 5.0,
         comment TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS cards (
+        id INTEGER PRIMARY KEY, token TEXT UNIQUE NOT NULL, type TEXT, title TEXT,
+        data TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     db.commit()
     db.close()
     migrate()
@@ -168,10 +192,12 @@ def migrate():
     c = db.cursor()
     wanted = {
         'products': {'ingredients': 'TEXT', 'benefits': 'TEXT', 'badge': 'TEXT'},
-        'orders': {'address': 'TEXT', 'receipt_path': 'TEXT'},
+        'orders': {'address': 'TEXT', 'receipt_path': 'TEXT',
+                   'guest_name': 'TEXT', 'guest_email': 'TEXT', 'guest_phone': 'TEXT', 'note': 'TEXT'},
         'order_items': {'name': 'TEXT'},
         'reviews': {'author': 'TEXT'},
-        'users': {'referral_code': 'TEXT', 'is_admin': 'INTEGER DEFAULT 0', 'photo': 'TEXT'},
+        'users': {'referral_code': 'TEXT', 'is_admin': 'INTEGER DEFAULT 0', 'photo': 'TEXT',
+                  'role': "TEXT DEFAULT 'customer'", 'permissions': 'TEXT', 'referred_by': 'INTEGER'},
     }
     for table, cols in wanted.items():
         try:
@@ -286,11 +312,11 @@ def seed():
     # Seed (or upgrade) the admin account
     admin = c.execute('SELECT id FROM users WHERE email = ?', (ADMIN_EMAIL,)).fetchone()
     if not admin:
-        c.execute('''INSERT INTO users (email,password,first_name,last_name,is_admin,referral_code)
-                     VALUES (?,?,?,?,1,?)''',
+        c.execute('''INSERT INTO users (email,password,first_name,last_name,is_admin,role,referral_code)
+                     VALUES (?,?,?,?,1,'admin',?)''',
                   (ADMIN_EMAIL, generate_password_hash(ADMIN_PASSWORD), 'Regina', 'Admin', 'REGINAADMIN'))
     else:
-        c.execute('UPDATE users SET is_admin = 1 WHERE email = ?', (ADMIN_EMAIL,))
+        c.execute("UPDATE users SET is_admin = 1, role = 'admin' WHERE email = ?", (ADMIN_EMAIL,))
 
     # Attach real product photos (idempotent — also upgrades older emoji rows)
     photos = {
@@ -377,6 +403,43 @@ def admin_required(f):
             return redirect('/login?admin=1')
         return f(*args, **kwargs)
     return wrapper
+
+
+def user_role(u):
+    try:
+        return u['role'] or 'customer'
+    except (KeyError, IndexError):
+        return 'customer'
+
+
+def user_perms(u):
+    """List of admin sections this user may access. Super admin = all."""
+    if not u or not u['is_admin']:
+        return []
+    if user_role(u) == 'admin':
+        return [s for s, _ in ADMIN_SECTIONS]
+    try:
+        return json.loads(u['permissions'] or '[]')
+    except (ValueError, KeyError, IndexError):
+        return []
+
+
+def perm_required(section):
+    def deco(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            u = current_user()
+            if not u or not u['is_admin']:
+                return redirect('/login?admin=1')
+            if section not in user_perms(u):
+                allowed = user_perms(u)
+                # send them to their first allowed section, or a friendly notice
+                if allowed:
+                    return redirect('/admin/' + ('' if allowed[0] == 'dashboard' else allowed[0]))
+                return "You don't have access to the admin panel.", 403
+            return f(*args, **kwargs)
+        return wrapper
+    return deco
 
 
 def tier_for_points(points):
@@ -483,9 +546,22 @@ def register():
         db = get_db()
         try:
             code = 'REGINA' + str(random.randint(1000, 9999))
-            cur = db.execute('INSERT INTO users (email,password,first_name,last_name,referral_code) VALUES (?,?,?,?,?)',
+            # Did they arrive via a referral code?
+            referrer = None
+            ref = (data.get('ref') or '').strip().upper()
+            if ref:
+                referrer = db.execute('SELECT id FROM users WHERE UPPER(referral_code) = ?', (ref,)).fetchone()
+            cur = db.execute('INSERT INTO users (email,password,first_name,last_name,referral_code,referred_by) VALUES (?,?,?,?,?,?)',
                              (data['email'], generate_password_hash(data['password']),
-                              data['first_name'], data['last_name'], code))
+                              data['first_name'], data['last_name'], code,
+                              referrer['id'] if referrer else None))
+            # Reward the referrer with loyalty points
+            if referrer:
+                reward = int(get_settings().get('referral_reward', '250') or 250)
+                db.execute('UPDATE users SET loyalty_points = loyalty_points + ? WHERE id = ?', (reward, referrer['id']))
+                ru = db.execute('SELECT loyalty_points FROM users WHERE id = ?', (referrer['id'],)).fetchone()
+                db.execute('UPDATE users SET loyalty_tier = ? WHERE id = ?',
+                           (tier_for_points(ru['loyalty_points'])[0], referrer['id']))
             db.commit()
             session['user_id'] = cur.lastrowid
             session['user_name'] = data['first_name']
@@ -529,6 +605,7 @@ def account():
     orders = db.execute('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC', (session['user_id'],)).fetchall()
     wishlist = db.execute('''SELECT p.* FROM wishlist w JOIN products p ON w.product_id=p.id
                              WHERE w.user_id = ?''', (session['user_id'],)).fetchall()
+    referrals = db.execute('SELECT COUNT(*) n FROM users WHERE referred_by = ?', (session['user_id'],)).fetchone()['n']
     db.close()
     tier = tier_for_points(user['loyalty_points'])
     # next tier
@@ -538,16 +615,22 @@ def account():
             next_tier = t
             break
     return render_template('account.html', user=user, orders=orders, wishlist=wishlist,
-                           tier=tier, next_tier=next_tier, tiers=LOYALTY_TIERS)
+                           tier=tier, next_tier=next_tier, tiers=LOYALTY_TIERS, referrals=referrals)
 
 
 @app.route('/order/<code>')
-@login_required
 def order_track(code):
     db = get_db()
-    order = db.execute('SELECT * FROM orders WHERE order_code = ? AND user_id = ?',
-                       (code, session['user_id'])).fetchone()
+    order = db.execute('SELECT * FROM orders WHERE order_code = ?', (code,)).fetchone()
     if not order:
+        db.close()
+        abort(404)
+    # Access: owner (logged in), guest who just placed it (in session), or anyone with the code for a guest order.
+    uid = session.get('user_id')
+    allowed = (uid and order['user_id'] == uid) \
+        or (code in session.get('my_orders', [])) \
+        or (order['user_id'] is None)
+    if not allowed:
         db.close()
         abort(404)
     items = db.execute('SELECT * FROM order_items WHERE order_id = ?', (order['id'],)).fetchall()
@@ -622,23 +705,25 @@ def cart_get():
 
 
 @app.route('/checkout')
-@login_required
 def checkout():
     if not session.get('cart'):
         return redirect('/shop')
-    db = get_db()
-    user = db.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
-    db.close()
+    user = None
+    if session.get('user_id'):
+        db = get_db()
+        user = db.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+        db.close()
     return render_template('checkout.html', user=user)
 
 
 @app.route('/api/order/create', methods=['POST'])
-@login_required
 def order_create():
     data = request.get_json()
     cart = session.get('cart', [])
     if not cart:
         return jsonify({'success': False, 'error': 'Cart is empty'}), 400
+    uid = session.get('user_id')  # None for guest checkout
+    sym = get_settings().get('currency_symbol', '₦')
     sub = sum(i['price'] * i['quantity'] for i in cart)
     tax = round(sub * 0.075, 2)
     ship = float(data.get('shipping_cost', 2500))
@@ -647,45 +732,58 @@ def order_create():
     address = ', '.join(filter(None, [data.get('address'), data.get('city'), data.get('state')]))
     pay = data.get('payment_method')
     receipt = data.get('receipt_path')
-    # Bank transfers await receipt verification; card/POD are confirmed immediately.
-    status = 'pending' if pay == 'Bank Transfer' else 'confirmed'
+    g_name = (data.get('first_name', '') + ' ' + data.get('last_name', '')).strip() or data.get('name', 'Guest')
+    g_email = (data.get('email') or '').strip()
+    g_phone = data.get('phone', '')
+    note = (data.get('note') or '').strip()
+    # Bank transfer and Pay-on-Delivery (deposit) await receipt verification; card confirms immediately.
+    status = 'pending' if pay in ('Bank Transfer', 'Pay on Delivery') else 'confirmed'
     db = get_db()
+    # Always store the contact details entered at checkout (for guests AND logged-in customers).
     cur = db.execute('''INSERT INTO orders
-        (order_code,user_id,subtotal,tax,shipping,total,shipping_method,payment_method,address,status,receipt_path)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
-        (code, session['user_id'], sub, tax, ship, total,
-         data.get('shipping_method'), pay, address, status, receipt))
+        (order_code,user_id,subtotal,tax,shipping,total,shipping_method,payment_method,address,status,
+         receipt_path,guest_name,guest_email,guest_phone,note)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
+        (code, uid, sub, tax, ship, total, data.get('shipping_method'), pay, address, status,
+         receipt, g_name, g_email, g_phone, note))
     oid = cur.lastrowid
     for item in cart:
         db.execute('INSERT INTO order_items (order_id,product_id,name,quantity,price) VALUES (?,?,?,?,?)',
                    (oid, item['id'], item['name'], item['quantity'], item['price']))
-    points = int(total // 100)
-    db.execute('UPDATE users SET loyalty_points = loyalty_points + ? WHERE id = ?', (points, session['user_id']))
-    user = db.execute('SELECT loyalty_points FROM users WHERE id = ?', (session['user_id'],)).fetchone()
-    db.execute('UPDATE users SET loyalty_tier = ? WHERE id = ?',
-               (tier_for_points(user['loyalty_points'])[0], session['user_id']))
-    cust = db.execute('SELECT email, first_name FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+
+    points = 0
+    cust_email, cust_name = g_email, g_name
+    if uid:
+        points = int(total // 100)
+        db.execute('UPDATE users SET loyalty_points = loyalty_points + ? WHERE id = ?', (points, uid))
+        u = db.execute('SELECT loyalty_points, email, first_name FROM users WHERE id = ?', (uid,)).fetchone()
+        db.execute('UPDATE users SET loyalty_tier = ? WHERE id = ?', (tier_for_points(u['loyalty_points'])[0], uid))
+        cust_email, cust_name = u['email'], u['first_name']
     db.commit()
     db.close()
     session['cart'] = []
+    # remember this order so a guest can view it later in this session
+    session.setdefault('my_orders', [])
+    session['my_orders'].append(code)
     session.modified = True
 
     # Notifications (all graceful no-ops if not configured)
-    items_txt = '\n'.join(f"  • {i['name']} ×{i['quantity']} — ₦{int(i['price']*i['quantity']):,}" for i in cart)
+    items_txt = '\n'.join(f"  • {i['name']} ×{i['quantity']} — {sym}{int(i['price']*i['quantity']):,}" for i in cart)
+    pts_line = f"You earned {points} loyalty points. " if points else ""
     try:
-        send_email(cust['email'],
+        send_email(cust_email,
                    f"Your Nature by Regina order {code}",
-                   f"Hi {cust['first_name']},\n\nThank you for your order! 🌿\n\n"
-                   f"Order: {code}\nItems:\n{items_txt}\n\nTotal: ₦{int(total):,}\n"
+                   f"Hi {cust_name},\n\nThank you for your order! 🌿\n\n"
+                   f"Order: {code}\nItems:\n{items_txt}\n\nTotal: {sym}{int(total):,}\n"
                    f"Payment: {pay}\nShipping: {data.get('shipping_method')}\nDeliver to: {address}\n\n"
-                   f"You earned {points} loyalty points. Track your order any time in your account.\n\n"
-                   f"With love,\nRegina's Team")
-        send_email(notify_email_addr(), f"🛒 New order {code} — ₦{int(total):,}",
-                   f"New order {code}\nCustomer: {cust['first_name']} ({cust['email']})\n"
-                   f"Total: ₦{int(total):,}\nPayment: {pay} ({status})\nItems:\n{items_txt}\nAddress: {address}")
+                   f"{pts_line}Keep your order code to track it: {code}\n\nWith love,\nRegina's Team")
+        send_email(notify_email_addr(), f"🛒 New order {code} — {sym}{int(total):,}",
+                   f"New order {code}\nCustomer: {cust_name} ({cust_email or 'guest'})\nPhone: {g_phone}\n"
+                   f"Total: {sym}{int(total):,}\nPayment: {pay} ({status})\nItems:\n{items_txt}\nAddress: {address}"
+                   + (f"\nNote: {note}" if note else ""))
         telegram_notify(
-            f"🛒 <b>New order {code}</b>\nCustomer: {cust['first_name']}\n"
-            f"Total: <b>₦{int(total):,}</b>\nPayment: {pay} ({status})\n{items_txt}")
+            f"🛒 <b>New order {code}</b>\nCustomer: {cust_name}{' (guest)' if not uid else ''}\n"
+            f"Total: <b>{sym}{int(total):,}</b>\nPayment: {pay} ({status})\n{items_txt}")
     except Exception as e:
         print('[notify] error:', e)
 
@@ -836,15 +934,19 @@ def not_found(e):
     return render_template('404.html'), 404
 
 
+# Currency symbol available everywhere, including inside Jinja macros
+app.jinja_env.globals['cur_symbol'] = lambda: get_settings().get('currency_symbol', '₦')
+
+
 @app.context_processor
 def inject_globals():
     is_admin = False
+    admin_perms = []
     if 'user_id' in session:
-        db = get_db()
-        u = db.execute('SELECT is_admin FROM users WHERE id = ?', (session['user_id'],)).fetchone()
-        db.close()
+        u = current_user()
         is_admin = bool(u and u['is_admin'])
-    return {'now_year': datetime.now().year, 'is_admin': is_admin,
+        admin_perms = user_perms(u)
+    return {'now_year': datetime.now().year, 'is_admin': is_admin, 'admin_perms': admin_perms,
             'paystack_public_key': conf('paystack_public', 'PAYSTACK_PUBLIC_KEY'),
             'site': get_settings()}
 
@@ -852,39 +954,64 @@ def inject_globals():
 # --------------------------------------------------------------------------- #
 #  Payments — Paystack
 # --------------------------------------------------------------------------- #
+def feature_on(key):
+    """True if an admin feature switch is on."""
+    return get_settings().get(key, '0') == '1'
+
+
+def smtp_accounts():
+    """Parse the multi-line 'smtp_accounts' setting into a list of dicts.
+    Each line: host | port | user | password | from-email"""
+    raw = get_settings().get('smtp_accounts', '') or ''
+    accts = []
+    for line in raw.splitlines():
+        if not line.strip():
+            continue
+        p = [x.strip() for x in line.split('|')]
+        if len(p) >= 4 and p[0] and p[2] and p[3]:
+            accts.append({'host': p[0], 'port': int(p[1] or 587) if p[1].isdigit() else 587,
+                          'user': p[2], 'pass': p[3], 'from': (p[4] if len(p) > 4 and p[4] else p[2])})
+    # Fallback to legacy single-account env vars
+    if not accts and os.environ.get('SMTP_HOST'):
+        accts.append({'host': os.environ['SMTP_HOST'], 'port': int(os.environ.get('SMTP_PORT', '587')),
+                      'user': os.environ.get('SMTP_USER', ''), 'pass': os.environ.get('SMTP_PASS', ''),
+                      'from': os.environ.get('SMTP_FROM', os.environ.get('SMTP_USER', ''))})
+    return accts
+
+
 def send_email(to_addr, subject, body):
-    """Send a plain-text email via SMTP. Returns True on success, False if unconfigured/failed."""
-    host = conf('smtp_host', 'SMTP_HOST')
-    user = conf('smtp_user', 'SMTP_USER')
-    pwd = conf('smtp_pass', 'SMTP_PASS')
-    if not (host and user and pwd and to_addr):
+    """Send a plain-text email, trying each configured SMTP account until one works."""
+    if not feature_on('enable_email') or not to_addr:
         return False
-    port = int(conf('smtp_port', 'SMTP_PORT', '587') or 587)
-    from_addr = conf('smtp_from', 'SMTP_FROM') or user
     import smtplib
     from email.message import EmailMessage
-    msg = EmailMessage()
-    msg['Subject'] = subject
-    msg['From'] = from_addr
-    msg['To'] = to_addr
-    msg.set_content(body)
-    try:
-        with smtplib.SMTP(host, port, timeout=15) as s:
-            s.starttls()
-            s.login(user, pwd)
-            s.send_message(msg)
-        return True
-    except Exception as e:
-        print('[email] failed:', e)
-        return False
+    for a in smtp_accounts():
+        msg = EmailMessage()
+        msg['Subject'] = subject
+        msg['From'] = a['from']
+        msg['To'] = to_addr
+        msg.set_content(body)
+        try:
+            with smtplib.SMTP(a['host'], a['port'], timeout=15) as s:
+                s.starttls()
+                s.login(a['user'], a['pass'])
+                s.send_message(msg)
+            return True
+        except Exception as e:
+            print(f"[email] {a['host']} failed:", e)
+            continue
+    return False
 
 
 def notify_email_addr():
-    return conf('notify_email', 'NOTIFY_EMAIL') or conf('smtp_user', 'SMTP_USER')
+    accts = smtp_accounts()
+    return get_settings().get('notify_email') or (accts[0]['user'] if accts else '')
 
 
 def telegram_notify(text):
-    """Send a message to the admin Telegram chat. Silent no-op if unconfigured."""
+    """Send a message to the admin Telegram chat. Silent no-op if unconfigured/off."""
+    if not feature_on('enable_telegram'):
+        return False
     token = conf('telegram_token', 'TELEGRAM_BOT_TOKEN')
     chat = conf('telegram_chat', 'TELEGRAM_CHAT_ID')
     if not (token and chat):
@@ -938,7 +1065,7 @@ def paystack_verify_route():
 #  Admin panel
 # --------------------------------------------------------------------------- #
 @app.route('/admin')
-@admin_required
+@perm_required('dashboard')
 def admin_dashboard():
     db = get_db()
     stats = {
@@ -963,7 +1090,7 @@ def admin_dashboard():
 
 
 @app.route('/admin/products')
-@admin_required
+@perm_required('products')
 def admin_products():
     db = get_db()
     products = db.execute('SELECT * FROM products ORDER BY id').fetchall()
@@ -981,13 +1108,13 @@ def all_categories():
 
 
 @app.route('/admin/products/new')
-@admin_required
+@perm_required('products')
 def admin_product_new():
     return render_template('admin/product_form.html', product=None, categories=all_categories())
 
 
 @app.route('/admin/products/<int:pid>/edit')
-@admin_required
+@perm_required('products')
 def admin_product_edit(pid):
     db = get_db()
     p = db.execute('SELECT * FROM products WHERE id = ?', (pid,)).fetchone()
@@ -1051,7 +1178,7 @@ def admin_product_delete(pid):
 
 
 @app.route('/admin/orders')
-@admin_required
+@perm_required('orders')
 def admin_orders():
     db = get_db()
     orders = db.execute('''SELECT o.*, u.first_name, u.last_name, u.email FROM orders o
@@ -1074,7 +1201,7 @@ def admin_order_status():
 
 
 @app.route('/admin/customers')
-@admin_required
+@perm_required('customers')
 def admin_customers():
     db = get_db()
     customers = db.execute('''SELECT u.*, COUNT(o.id) order_count,
@@ -1086,7 +1213,7 @@ def admin_customers():
 
 
 @app.route('/admin/chats')
-@admin_required
+@perm_required('chats')
 def admin_chats():
     db = get_db()
     msgs = db.execute('''SELECT c.*, u.first_name FROM chat_messages c
@@ -1097,7 +1224,7 @@ def admin_chats():
 
 
 @app.route('/admin/settings')
-@admin_required
+@perm_required('settings')
 def admin_settings():
     return render_template('admin/settings.html', schema=SETTINGS_SCHEMA, settings=get_settings())
 
@@ -1123,8 +1250,127 @@ def admin_settings_save():
 # --------------------------------------------------------------------------- #
 #  Admin: Media library
 # --------------------------------------------------------------------------- #
+@app.route('/admin/cards')
+@perm_required('cards')
+def admin_cards():
+    db = get_db()
+    recent = db.execute('SELECT * FROM cards ORDER BY created_at DESC LIMIT 12').fetchall()
+    db.close()
+    cards = []
+    for c in recent:
+        d = dict(c)
+        try:
+            d['parsed'] = json.loads(c['data'] or '{}')
+        except ValueError:
+            d['parsed'] = {}
+        cards.append(d)
+    return render_template('admin/cards.html', recent=cards)
+
+
+@app.route('/api/admin/card/save', methods=['POST'])
+@perm_required('cards')
+def admin_card_save():
+    data = request.get_json()
+    token = data.get('token') or ''.join(random.choice('abcdefghjkmnpqrstuvwxyz23456789') for _ in range(10))
+    payload = json.dumps(data.get('card', {}))
+    db = get_db()
+    existing = db.execute('SELECT id FROM cards WHERE token = ?', (token,)).fetchone()
+    if existing:
+        db.execute('UPDATE cards SET type=?, title=?, data=? WHERE token=?',
+                   (data.get('type'), data.get('title'), payload, token))
+    else:
+        db.execute('INSERT INTO cards (token, type, title, data) VALUES (?,?,?,?)',
+                   (token, data.get('type'), data.get('title'), payload))
+    db.commit()
+    db.close()
+    return jsonify({'success': True, 'token': token, 'url': f'/card/{token}'})
+
+
+@app.route('/api/admin/card/<int:cid>/delete', methods=['POST'])
+@perm_required('cards')
+def admin_card_delete(cid):
+    db = get_db()
+    db.execute('DELETE FROM cards WHERE id = ?', (cid,))
+    db.commit()
+    db.close()
+    return jsonify({'success': True})
+
+
+@app.route('/card/<token>')
+def card_public(token):
+    db = get_db()
+    row = db.execute('SELECT * FROM cards WHERE token = ?', (token,)).fetchone()
+    db.close()
+    if not row:
+        abort(404)
+    try:
+        card = json.loads(row['data'] or '{}')
+    except ValueError:
+        card = {}
+    return render_template('card_public.html', card=card, ctype=row['type'], token=token)
+
+
+@app.route('/admin/team')
+@perm_required('team')
+def admin_team():
+    db = get_db()
+    subs = db.execute("SELECT * FROM users WHERE role='subadmin' ORDER BY created_at DESC").fetchall()
+    db.close()
+    team = []
+    for s in subs:
+        d = dict(s)
+        try:
+            d['perm_list'] = json.loads(s['permissions'] or '[]')
+        except (ValueError, TypeError):
+            d['perm_list'] = []
+        team.append(d)
+    return render_template('admin/team.html', subs=team, sections=ADMIN_SECTIONS)
+
+
+@app.route('/api/admin/team/save', methods=['POST'])
+@perm_required('team')
+def admin_team_save():
+    d = request.get_json()
+    valid = dict(ADMIN_SECTIONS)
+    perms = json.dumps([s for s in d.get('permissions', []) if s in valid])
+    db = get_db()
+    try:
+        if d.get('id'):
+            sets, vals = ['permissions=?'], [perms]
+            if d.get('name'):
+                sets.append('first_name=?'); vals.append(d['name'])
+            if d.get('password'):
+                sets.append('password=?'); vals.append(generate_password_hash(d['password']))
+            vals.append(d['id'])
+            db.execute(f"UPDATE users SET {', '.join(sets)} WHERE id=? AND role='subadmin'", vals)
+        else:
+            if not d.get('email') or not d.get('password'):
+                db.close()
+                return jsonify({'success': False, 'error': 'Email and password are required'}), 400
+            db.execute('''INSERT INTO users (email,password,first_name,last_name,is_admin,role,permissions)
+                          VALUES (?,?,?,?,1,'subadmin',?)''',
+                       (d['email'].strip(), generate_password_hash(d['password']),
+                        d.get('name', 'Team'), 'Member', perms))
+        db.commit()
+    except sqlite3.IntegrityError:
+        db.close()
+        return jsonify({'success': False, 'error': 'That email is already registered'}), 400
+    db.close()
+    return jsonify({'success': True})
+
+
+@app.route('/api/admin/team/<int:uid>/delete', methods=['POST'])
+@perm_required('team')
+def admin_team_delete(uid):
+    db = get_db()
+    db.execute("DELETE FROM users WHERE id = ? AND role = 'subadmin'", (uid,))
+    db.commit()
+    db.close()
+    return jsonify({'success': True})
+
+
 @app.route('/admin/media')
-@admin_required
+@perm_required('media')
 def admin_media():
     db = get_db()
     items = db.execute('SELECT * FROM media ORDER BY created_at DESC').fetchall()
@@ -1182,7 +1428,7 @@ def admin_media_delete(mid):
 #  Admin: Testimonials
 # --------------------------------------------------------------------------- #
 @app.route('/admin/testimonials')
-@admin_required
+@perm_required('testimonials')
 def admin_testimonials():
     db = get_db()
     items = db.execute('SELECT * FROM testimonials ORDER BY created_at DESC').fetchall()
@@ -1220,7 +1466,7 @@ def admin_testimonial_delete(tid):
 #  Admin: Ad Studio (image -> video)
 # --------------------------------------------------------------------------- #
 @app.route('/admin/ads')
-@admin_required
+@perm_required('ads')
 def admin_ads():
     provider = conf('video_provider', default='replicate')
     has_key = bool(conf('video_api_key'))
@@ -1302,6 +1548,8 @@ def _img_to_video(provider, api_key, model, image_url):
 @app.route('/api/admin/ad/generate', methods=['POST'])
 @admin_required
 def admin_ad_generate():
+    if not feature_on('enable_video'):
+        return jsonify({'success': False, 'error': 'Ad Studio AI generation is turned off in Site Settings → Features.'}), 400
     provider = conf('video_provider', default='replicate')
     api_key = conf('video_api_key', 'VIDEO_API_KEY')
     model = conf('video_model')
@@ -1363,7 +1611,12 @@ def profile_photo():
     return jsonify({'success': True, 'path': path})
 
 
+# Initialise the database at import time too, so it works under a production
+# server (gunicorn) where the __main__ block below does not run.
+init_db()
+seed()
+
 if __name__ == '__main__':
-    init_db()
-    seed()
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_DEBUG', '1') == '1'
+    app.run(host='0.0.0.0', port=port, debug=debug)

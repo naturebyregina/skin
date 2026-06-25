@@ -54,6 +54,25 @@
                     <p style="margin-top:14px;font-size:0.85rem">Your referral code: <strong style="color:var(--gold-400)">{{ user.referral_code or 'REGINA' }}</strong> — share it and you both earn rewards.</p>
                 </div>
 
+                <!-- REFER & EARN -->
+                <div id="refer" class="panel reveal refer-panel">
+                    <div class="refer-text">
+                        <h3>🎁 Refer & Earn</h3>
+                        <p>Share your card or link. When a friend signs up, <strong>you earn {{ site.referral_reward }} points</strong> and they get {{ site.referral_offer }}.</p>
+                        <p style="margin:10px 0"><strong>{{ referrals }}</strong> friend{{ 's' if referrals != 1 }} joined with your code so far.</p>
+                        <div class="refer-link-box">
+                            <span id="refer-link"></span>
+                        </div>
+                        <div class="cs-actions" style="margin-top:14px">
+                            <button class="btn btn-primary btn-sm" onclick="copyRefer()">🔗 Copy link</button>
+                            <a class="btn btn-outline btn-sm" id="refer-wa" target="_blank">💬 WhatsApp</a>
+                            <button class="btn btn-outline btn-sm" onclick="cardDownloadPNG(document.getElementById('refer-card'),'referral-card')">⬇ PNG</button>
+                            <button class="btn btn-outline btn-sm" onclick="cardDownloadPDF(document.getElementById('refer-card'),'referral-card')">⬇ PDF</button>
+                        </div>
+                    </div>
+                    <div class="cs-stage refer-stage"><div id="refer-card" class="card-render"></div></div>
+                </div>
+
                 <!-- ORDERS -->
                 <div id="orders" class="panel reveal">
                     <h3>Order History</h3>
@@ -65,7 +84,7 @@
                                 <div style="font-size:0.82rem;color:var(--muted)">{{ o.created_at[:10] }} · {{ o.shipping_method }}</div>
                             </div>
                             <span class="status-pill status-{{ o.status }}">{{ o.status }}</span>
-                            <strong>₦{{ "{:,.0f}".format(o.total) }}</strong>
+                            <strong>{{ site.currency_symbol }}{{ "{:,.0f}".format(o.total) }}</strong>
                             <a href="/order/{{ o.order_code }}" class="btn btn-outline btn-sm">Track</a>
                         </div>
                         {% endfor %}
@@ -89,7 +108,22 @@
 </section>
 {% endblock %}
 {% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="{{ url_for('static', filename='card.js') }}"></script>
 <script>
+const REF_CODE = "{{ user.referral_code or 'REGINA' }}";
+const REF_LINK = location.origin + "/register?ref=" + REF_CODE;
+document.getElementById('refer-link').textContent = REF_LINK;
+document.getElementById('refer-wa').href = 'https://wa.me/?text=' +
+    encodeURIComponent("Join {{ site.brand_name }} and get {{ site.referral_offer }}! Use my code " + REF_CODE + ": " + REF_LINK);
+buildCard(document.getElementById('refer-card'), {
+    brand: "{{ site.brand_name }}", logo: "{{ site.logo_image }}", color: "{{ site.color_primary }}",
+    title: "Refer & Earn", name: "A gift for you 🌿",
+    line1: "{{ site.referral_offer }}", line2: REF_CODE, line3: REF_LINK
+}, 'referral');
+function copyRefer(){ navigator.clipboard.writeText(REF_LINK); toast('Referral link copied 🔗'); }
+
 function uploadAvatar(input){
     const file = input.files[0];
     if(!file) return;

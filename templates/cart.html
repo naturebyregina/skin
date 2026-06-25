@@ -20,7 +20,7 @@
 {% endblock %}
 {% block scripts %}
 <script>
-function fmt(n){ return '₦' + Number(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
+function fmt(n){ return '{{ site.currency_symbol }}' + Number(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
 function imgTag(src){ return (src && (src.startsWith('/') || src.startsWith('http'))) ? `<img src="${src}" alt="">` : src; }
 
 function renderCart(d){

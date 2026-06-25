@@ -7,19 +7,23 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="admin-body">
+    <div class="admin-overlay" id="admin-overlay" onclick="closeSidebar()"></div>
     <div class="admin-shell">
-        <aside class="admin-sidebar">
+        <aside class="admin-sidebar" id="admin-sidebar">
+            <button class="admin-close" onclick="closeSidebar()" aria-label="Close menu">✕</button>
             <a href="/" class="admin-logo">🌿 Regina <span>Admin</span></a>
-            <nav class="admin-nav">
-                <a href="/admin" class="{{ 'active' if active == 'dashboard' }}">📊 Dashboard</a>
-                <a href="/admin/products" class="{{ 'active' if active == 'products' }}">🧴 Products</a>
-                <a href="/admin/orders" class="{{ 'active' if active == 'orders' }}">📦 Orders</a>
-                <a href="/admin/customers" class="{{ 'active' if active == 'customers' }}">👥 Customers</a>
-                <a href="/admin/testimonials" class="{{ 'active' if active == 'testimonials' }}">⭐ Testimonials</a>
-                <a href="/admin/media" class="{{ 'active' if active == 'media' }}">🖼️ Media Library</a>
-                <a href="/admin/ads" class="{{ 'active' if active == 'ads' }}">🎬 Ad Studio</a>
-                <a href="/admin/chats" class="{{ 'active' if active == 'chats' }}">💬 Chat Logs</a>
-                <a href="/admin/settings" class="{{ 'active' if active == 'settings' }}">⚙️ Site Settings</a>
+            <nav class="admin-nav" onclick="closeSidebar()">
+                {% if 'dashboard' in admin_perms %}<a href="/admin" class="{{ 'active' if active == 'dashboard' }}">📊 Dashboard</a>{% endif %}
+                {% if 'products' in admin_perms %}<a href="/admin/products" class="{{ 'active' if active == 'products' }}">🧴 Products</a>{% endif %}
+                {% if 'orders' in admin_perms %}<a href="/admin/orders" class="{{ 'active' if active == 'orders' }}">📦 Orders</a>{% endif %}
+                {% if 'customers' in admin_perms %}<a href="/admin/customers" class="{{ 'active' if active == 'customers' }}">👥 Customers</a>{% endif %}
+                {% if 'testimonials' in admin_perms %}<a href="/admin/testimonials" class="{{ 'active' if active == 'testimonials' }}">⭐ Testimonials</a>{% endif %}
+                {% if 'media' in admin_perms %}<a href="/admin/media" class="{{ 'active' if active == 'media' }}">🖼️ Media Library</a>{% endif %}
+                {% if 'ads' in admin_perms %}<a href="/admin/ads" class="{{ 'active' if active == 'ads' }}">🎬 Ad Studio</a>{% endif %}
+                {% if 'cards' in admin_perms %}<a href="/admin/cards" class="{{ 'active' if active == 'cards' }}">🪪 Card Studio</a>{% endif %}
+                {% if 'chats' in admin_perms %}<a href="/admin/chats" class="{{ 'active' if active == 'chats' }}">💬 Chat Logs</a>{% endif %}
+                {% if 'team' in admin_perms %}<a href="/admin/team" class="{{ 'active' if active == 'team' }}">🧑‍🤝‍🧑 Team</a>{% endif %}
+                {% if 'settings' in admin_perms %}<a href="/admin/settings" class="{{ 'active' if active == 'settings' }}">⚙️ Site Settings</a>{% endif %}
             </nav>
             <div class="admin-side-foot">
                 <a href="/">← View store</a>
@@ -29,7 +33,7 @@
 
         <div class="admin-main">
             <header class="admin-topbar">
-                <button class="admin-burger" onclick="document.querySelector('.admin-sidebar').classList.toggle('open')">☰</button>
+                <button class="admin-burger" onclick="openSidebar()" aria-label="Menu">☰</button>
                 <h1>{% block heading %}Dashboard{% endblock %}</h1>
                 <span class="admin-badge">⚙ Admin</span>
             </header>
@@ -38,6 +42,10 @@
             </div>
         </div>
     </div>
+    <script>
+    function openSidebar(){ document.getElementById('admin-sidebar').classList.add('open'); document.getElementById('admin-overlay').classList.add('show'); }
+    function closeSidebar(){ document.getElementById('admin-sidebar').classList.remove('open'); document.getElementById('admin-overlay').classList.remove('show'); }
+    </script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>

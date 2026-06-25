@@ -29,7 +29,7 @@
                     <a href="/admin" class="desktop-only" style="color:var(--gold-600)">⚙ Admin</a>
                 {% endif %}
                 {% if session.get('user_id') %}
-                    <a href="/account">Hi, {{ session.get('user_name') }}</a>
+                    <a href="/account" class="desktop-only">Hi, {{ session.get('user_name') }}</a>
                 {% else %}
                     <a href="/login" class="desktop-only">Sign In</a>
                 {% endif %}
@@ -106,6 +106,7 @@
         </div>
     </footer>
 
+    {% if site.enable_chat == '1' %}
     <div class="chat-widget">
         <div class="chat-bubble" onclick="toggleChat()" title="Chat with Regina's Team">💬</div>
         <div class="chat-modal" id="chat-modal" style="display:none;">
@@ -125,6 +126,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
     {% block scripts %}{% endblock %}

@@ -17,12 +17,12 @@
         {% for p in products %}
         <tr id="prow-{{ p.id }}">
             <td class="cell-img">{{ media(p.image, p.name) }}</td>
-            <td><strong>{{ p.name }}</strong>{% if p.badge %} <span class="mini-badge">{{ p.badge }}</span>{% endif %}</td>
-            <td>{{ p.category }}</td>
-            <td>₦{{ "{:,.0f}".format(p.price) }}</td>
-            <td><span class="stock-tag {{ 'low' if p.stock < 15 }}">{{ p.stock }}</span></td>
-            <td>⭐ {{ p.rating }}</td>
-            <td class="row-actions">
+            <td data-label="Name"><strong>{{ p.name }}</strong>{% if p.badge %} <span class="mini-badge">{{ p.badge }}</span>{% endif %}</td>
+            <td data-label="Category">{{ p.category }}</td>
+            <td data-label="Price">{{ site.currency_symbol }}{{ "{:,.0f}".format(p.price) }}</td>
+            <td data-label="Stock"><span class="stock-tag {{ 'low' if p.stock < 15 }}">{{ p.stock }}</span></td>
+            <td data-label="Rating">⭐ {{ p.rating }}</td>
+            <td data-label="Actions" class="row-actions">
                 <a href="/admin/products/{{ p.id }}/edit" class="link-edit">Edit</a>
                 <button class="link-del" onclick="deleteProduct({{ p.id }}, '{{ p.name }}')">Delete</button>
             </td>

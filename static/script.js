@@ -59,13 +59,21 @@ function initFloatingLeaves() {
 function initParallax() {
     const layers = document.querySelectorAll('[data-parallax]');
     if (!layers.length) return;
-    window.addEventListener('scroll', () => {
+    const apply = () => {
+        // Disable parallax on tablet/mobile — stacked layouts would let images drift over text.
+        if (window.innerWidth < 980) {
+            layers.forEach((l) => { l.style.transform = ''; });
+            return;
+        }
         const y = window.scrollY;
         layers.forEach((l) => {
             const speed = parseFloat(l.dataset.parallax) || 0.2;
             l.style.transform = `translateY(${y * speed}px)`;
         });
-    }, { passive: true });
+    };
+    window.addEventListener('scroll', apply, { passive: true });
+    window.addEventListener('resize', apply);
+    apply();
 }
 
 /* ---------- Subtle per-card tilt on hover ---------- */
@@ -242,7 +250,8 @@ function handleRegister(e) {
     e.preventDefault();
     post('/register', {
         first_name: val('first_name'), last_name: val('last_name'),
-        email: val('email'), password: val('password')
+        email: val('email'), password: val('password'),
+        ref: new URLSearchParams(location.search).get('ref') || ''
     }, (d) => {
         if (d.success) { toast('Account created ✨'); setTimeout(() => location.href = '/account', 900); }
         else err(d.error);

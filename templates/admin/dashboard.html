@@ -6,7 +6,7 @@
 {% block content %}
 
 <div class="admin-stats">
-    <div class="admin-stat"><div class="ic">💰</div><div class="v">₦{{ "{:,.0f}".format(stats.revenue) }}</div><div class="l">Total Revenue</div></div>
+    <div class="admin-stat"><div class="ic">💰</div><div class="v">{{ site.currency_symbol }}{{ "{:,.0f}".format(stats.revenue) }}</div><div class="l">Total Revenue</div></div>
     <div class="admin-stat"><div class="ic">📦</div><div class="v">{{ stats.orders }}</div><div class="l">Orders</div></div>
     <div class="admin-stat"><div class="ic">👥</div><div class="v">{{ stats.customers }}</div><div class="l">Customers</div></div>
     <div class="admin-stat"><div class="ic">🧴</div><div class="v">{{ stats.products }}</div><div class="l">Products</div></div>
@@ -21,10 +21,10 @@
             <tbody>
             {% for o in recent %}
             <tr>
-                <td><a href="/admin/orders">{{ o.order_code }}</a></td>
-                <td>{{ o.first_name or 'Guest' }} {{ o.last_name or '' }}</td>
-                <td>₦{{ "{:,.0f}".format(o.total) }}</td>
-                <td><span class="status-pill status-{{ o.status }}">{{ o.status }}</span></td>
+                <td data-label="Order"><a href="/admin/orders">{{ o.order_code }}</a></td>
+                <td data-label="Customer">{{ o.first_name or 'Guest' }} {{ o.last_name or '' }}</td>
+                <td data-label="Total">{{ site.currency_symbol }}{{ "{:,.0f}".format(o.total) }}</td>
+                <td data-label="Status"><span class="status-pill status-{{ o.status }}">{{ o.status }}</span></td>
             </tr>
             {% endfor %}
             </tbody>
@@ -56,9 +56,9 @@
             {% for t in top %}
             <tr>
                 <td class="cell-img">{{ media(t.image, t.name) }}</td>
-                <td>{{ t.name }}</td>
-                <td>{{ t.sold }}</td>
-                <td>₦{{ "{:,.0f}".format(t.revenue) }}</td>
+                <td data-label="Product">{{ t.name }}</td>
+                <td data-label="Sold">{{ t.sold }}</td>
+                <td data-label="Revenue">{{ site.currency_symbol }}{{ "{:,.0f}".format(t.revenue) }}</td>
             </tr>
             {% endfor %}
             </tbody>
@@ -74,8 +74,8 @@
             {% for p in low_stock %}
             <tr>
                 <td class="cell-img">{{ media(p.image, p.name) }}</td>
-                <td>{{ p.name }}</td>
-                <td><span class="stock-tag {{ 'low' if p.stock < 15 }}">{{ p.stock }} left</span></td>
+                <td data-label="Product">{{ p.name }}</td>
+                <td data-label="Stock"><span class="stock-tag {{ 'low' if p.stock < 15 }}">{{ p.stock }} left</span></td>
             </tr>
             {% endfor %}
             </tbody>

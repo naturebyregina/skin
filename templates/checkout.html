@@ -16,39 +16,55 @@
             <div>
                 <div class="co-section reveal">
                     <h3><span class="num">1</span> Delivery Details</h3>
+                    {% if not user %}
+                    <div class="guest-note">🛍️ Checking out as a guest — no account needed. <a href="/login">Sign in</a> for faster checkout & loyalty points.</div>
+                    {% endif %}
                     <div class="row-2">
-                        <div class="field"><label>First Name</label><input id="fn" value="{{ user.first_name }}" required></div>
-                        <div class="field"><label>Last Name</label><input id="ln" value="{{ user.last_name }}" required></div>
+                        <div class="field"><label>First Name</label><input id="fn" value="{{ user.first_name if user else '' }}" required></div>
+                        <div class="field"><label>Last Name</label><input id="ln" value="{{ user.last_name if user else '' }}" required></div>
                     </div>
-                    <div class="field"><label>Phone</label><input id="phone" value="{{ user.phone or '' }}" placeholder="0800 000 0000" required></div>
-                    <div class="field"><label>Address</label><input id="address" value="{{ user.address or '' }}" placeholder="Street address" required></div>
+                    <div class="field"><label>Email</label><input id="email" type="email" value="{{ user.email if user else '' }}" placeholder="you@email.com" required></div>
+                    <div class="field"><label>Phone</label><input id="phone" value="{{ user.phone if user else '' }}" placeholder="0800 000 0000" required></div>
+                    <div class="field"><label>Address</label><input id="address" value="{{ user.address if user else '' }}" placeholder="Street address" required></div>
                     <div class="row-2">
-                        <div class="field"><label>City</label><input id="city" value="{{ user.city or '' }}" required></div>
-                        <div class="field"><label>State</label><input id="state" value="{{ user.state or '' }}" required></div>
+                        <div class="field"><label>City</label><input id="city" value="{{ user.city if user else '' }}" required></div>
+                        <div class="field"><label>State</label><input id="state" value="{{ user.state if user else '' }}" required></div>
                     </div>
+                    <div class="field"><label>Order Note <span class="muted-sm">(optional — landmark, delivery instructions, etc.)</span></label><textarea id="note" rows="2" placeholder="e.g. Call on arrival, gate is blue…"></textarea></div>
                 </div>
 
                 <div class="co-section reveal">
                     <h3><span class="num">2</span> Shipping Method</h3>
                     <div class="opt-list" id="ship-opts">
-                        <label class="opt selected"><input type="radio" name="ship" value="Local Rider" data-cost="2000" checked><span class="opt-label">Local Rider <small style="color:var(--muted)">· 1–2 days</small></span><span class="opt-price">₦2,000</span></label>
-                        <label class="opt"><input type="radio" name="ship" value="Interstate" data-cost="5000"><span class="opt-label">Interstate <small style="color:var(--muted)">· 3–5 days</small></span><span class="opt-price">₦5,000</span></label>
-                        <label class="opt"><input type="radio" name="ship" value="Air Shipping" data-cost="8000"><span class="opt-label">Air Shipping <small style="color:var(--muted)">· 1–3 days</small></span><span class="opt-price">₦8,000</span></label>
-                        <label class="opt"><input type="radio" name="ship" value="International" data-cost="15000"><span class="opt-label">International <small style="color:var(--muted)">· 7–14 days</small></span><span class="opt-price">₦15,000</span></label>
+                        <label class="opt selected"><input type="radio" name="ship" value="Local Rider" data-cost="2000" checked><span class="opt-label">Local Rider <small style="color:var(--muted)">· 1–2 days</small></span><span class="opt-price">{{ site.currency_symbol }}2,000</span></label>
+                        <label class="opt"><input type="radio" name="ship" value="Interstate" data-cost="5000"><span class="opt-label">Interstate <small style="color:var(--muted)">· 3–5 days</small></span><span class="opt-price">{{ site.currency_symbol }}5,000</span></label>
+                        <label class="opt"><input type="radio" name="ship" value="Air Shipping" data-cost="8000"><span class="opt-label">Air Shipping <small style="color:var(--muted)">· 1–3 days</small></span><span class="opt-price">{{ site.currency_symbol }}8,000</span></label>
+                        <label class="opt"><input type="radio" name="ship" value="International" data-cost="15000"><span class="opt-label">International <small style="color:var(--muted)">· 7–14 days</small></span><span class="opt-price">{{ site.currency_symbol }}15,000</span></label>
                     </div>
                 </div>
 
                 <div class="co-section reveal">
                     <h3><span class="num">3</span> Payment</h3>
                     <div class="opt-list">
-                        <label class="opt selected"><input type="radio" name="pay" value="Card" checked><span class="opt-label">💳 Pay with Card {% if paystack_public_key %}<small style="color:var(--green-600)">· Secured by Paystack</small>{% else %}<small style="color:var(--muted)">· demo mode</small>{% endif %}</span></label>
-                        <label class="opt"><input type="radio" name="pay" value="Bank Transfer"><span class="opt-label">🏦 Bank Transfer</span></label>
-                        <label class="opt"><input type="radio" name="pay" value="Pay on Delivery"><span class="opt-label">📦 Pay on Delivery</span></label>
+                        {% set ns = namespace(first=true) %}
+                        {% if site.enable_card == '1' %}
+                        <label class="opt {{ 'selected' if ns.first }}"><input type="radio" name="pay" value="Card" {{ 'checked' if ns.first }}><span class="opt-label">💳 Pay with Card {% if paystack_public_key %}<small style="color:var(--green-600)">· Secured by Paystack</small>{% endif %}</span></label>
+                        {% set ns.first = false %}
+                        {% endif %}
+                        {% if site.enable_bank == '1' %}
+                        <label class="opt {{ 'selected' if ns.first }}"><input type="radio" name="pay" value="Bank Transfer" {{ 'checked' if ns.first }}><span class="opt-label">🏦 Bank Transfer</span></label>
+                        {% set ns.first = false %}
+                        {% endif %}
+                        {% if site.enable_pod == '1' %}
+                        <label class="opt {{ 'selected' if ns.first }}"><input type="radio" name="pay" value="Pay on Delivery" {{ 'checked' if ns.first }}><span class="opt-label">📦 Pay on Delivery <small style="color:var(--muted)">· small deposit confirms it</small></span></label>
+                        {% set ns.first = false %}
+                        {% endif %}
                     </div>
                 </div>
 
                 <div class="co-section reveal" id="bank-panel" style="display:none">
                     <h3><span class="num">✓</span> Payment Confirmation</h3>
+                    <div class="pod-banner" id="pod-info" style="display:none"></div>
                     <div class="bank-box" id="bank-details">
                         <p style="margin-bottom:10px">Please transfer your order total to {{ 'any of these accounts' if site.bank_accounts.strip().split('\n')|length > 1 else 'this account' }}:</p>
                         {% for line in site.bank_accounts.split('\n') %}
@@ -94,7 +110,7 @@
 <script>
 const PAYSTACK_PUBLIC_KEY = "{{ paystack_public_key }}";
 const USER_EMAIL = "{{ user.email }}";
-function fmt(n){ return '₦' + Number(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
+function fmt(n){ return '{{ site.currency_symbol }}' + Number(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
 let CART = {};
 
 document.querySelectorAll('.opt input').forEach(i => i.addEventListener('change', () => {
@@ -111,11 +127,19 @@ function togglePayPanels(){
     if(!show) return;
     const bankDetails = document.getElementById('bank-details');
     const prompt = document.getElementById('upload-prompt');
+    const podInfo = document.getElementById('pod-info');
     if(pay === 'Pay on Delivery'){
-        bankDetails.style.display = 'none';
-        prompt.innerHTML = '<strong>Upload a confirmation photo</strong> (a clear photo of yourself or a delivery note) so our rider can verify on arrival.';
+        const deposit = shipCost();
+        const balance = (CART.subtotal || 0) + (CART.tax || 0);
+        bankDetails.style.display = 'block';
+        podInfo.style.display = 'block';
+        podInfo.innerHTML = `📦 <strong>How Pay on Delivery works:</strong> pay the delivery fee of `
+            + `<strong>${fmt(deposit)}</strong> now to confirm your order — this is your deposit. `
+            + `The balance of <strong>${fmt(balance)}</strong> is paid to our rider in cash or transfer when your order arrives.`;
+        prompt.innerHTML = '<strong>Upload proof of your delivery-fee payment</strong> (receipt/screenshot). We dispatch once it\'s confirmed.';
     } else {
         bankDetails.style.display = 'block';
+        podInfo.style.display = 'none';
         prompt.innerHTML = '<strong>Upload your payment receipt</strong> (screenshot or photo) so we can confirm your order.';
     }
 }
@@ -150,6 +174,7 @@ function renderSummary(){
 }
 
 fetch('/api/cart/get').then(r=>r.json()).then(d=>{ CART=d; renderSummary(); });
+togglePayPanels();
 
 function createOrder(payRef){
     const ship = document.querySelector('input[name=ship]:checked');
@@ -159,9 +184,14 @@ function createOrder(payRef){
             payment_method: document.querySelector('input[name=pay]:checked').value,
             payment_reference: payRef || null,
             receipt_path: document.getElementById('receipt-path').value || null,
+            first_name: document.getElementById('fn').value,
+            last_name: document.getElementById('ln').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
             address: document.getElementById('address').value,
             city: document.getElementById('city').value,
-            state: document.getElementById('state').value
+            state: document.getElementById('state').value,
+            note: document.getElementById('note').value
         })
     }).then(r=>r.json()).then(d=>{
         if(d.success){ location.href = '/order/' + d.order_code + '?new=1'; }
@@ -176,7 +206,7 @@ function placeOrder(e){
 
     // Bank transfer and Pay on Delivery require a photo upload
     if((pay === 'Bank Transfer' || pay === 'Pay on Delivery') && !document.getElementById('receipt-path').value){
-        toast(pay === 'Bank Transfer' ? 'Please upload your payment receipt to continue' : 'Please upload a confirmation photo to continue');
+        toast(pay === 'Bank Transfer' ? 'Please upload your payment receipt to continue' : 'Please upload proof of your delivery-fee payment to continue');
         document.getElementById('bank-panel').scrollIntoView({behavior:'smooth'});
         return;
     }
@@ -186,8 +216,8 @@ function placeOrder(e){
         const handler = PaystackPop.setup({
             key: PAYSTACK_PUBLIC_KEY,
             email: USER_EMAIL,
-            amount: Math.round(total * 100), // amount in kobo
-            currency: 'NGN',
+            amount: Math.round(total * 100), // smallest currency unit
+            currency: '{{ site.currency_code }}',
             ref: 'NBR' + Date.now(),
             onClose: function(){ toast('Payment cancelled'); },
             callback: function(response){

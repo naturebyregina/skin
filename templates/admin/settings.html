@@ -14,7 +14,13 @@
             {% for key, label, default in fields %}
             <div class="field {{ 'full' if key in ['promo_text','hero_subtitle','tagline','contact_address','bank_accounts'] }}">
                 <label>{{ label }}</label>
-                {% if key.endswith('_video') %}
+                {% if key.startswith('enable_') %}
+                    <label class="switch">
+                        <input type="checkbox" id="{{ key }}" {{ 'checked' if settings[key] == '1' }}>
+                        <span class="slider"></span>
+                        <span class="switch-label" id="lab-{{ key }}">{{ 'On' if settings[key] == '1' else 'Off' }}</span>
+                    </label>
+                {% elif key.endswith('_video') %}
                     <div class="img-field">
                         <div class="img-preview sm" id="prev-{{ key }}">
                             {% if settings[key] %}<video src="{{ settings[key] }}" muted></video>{% else %}<span class="ph">🎬</span>{% endif %}
@@ -68,6 +74,12 @@
 {% block scripts %}
 <script>
 const KEYS = {{ settings.keys()|list|tojson }};
+document.querySelectorAll('.switch input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', () => {
+        const lab = document.getElementById('lab-' + cb.id);
+        if(lab) lab.textContent = cb.checked ? 'On' : 'Off';
+    });
+});
 function uploadSettingImage(input, key){
     const file = input.files[0]; if(!file) return;
     const status = document.getElementById('st-'+key); status.textContent = 'Uploading…';
@@ -97,7 +109,11 @@ function uploadSettingVideo(input, key){
 function saveSettings(e){
     e.preventDefault();
     const body = {};
-    KEYS.forEach(k => { const el = document.getElementById(k); if(el) body[k] = el.value; });
+    KEYS.forEach(k => {
+        const el = document.getElementById(k);
+        if(!el) return;
+        body[k] = (el.type === 'checkbox') ? (el.checked ? '1' : '0') : el.value;
+    });
     fetch('/api/admin/settings/save', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)})
         .then(r=>r.json()).then(d=>{
             if(d.success){ toast('Saved — your site is updated 🌿'); }
