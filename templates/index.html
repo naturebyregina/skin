@@ -98,9 +98,9 @@
             <span class="eyebrow">In Motion</span>
             <h2>The Nature by Regina ritual</h2>
         </div>
-        <div class="reel reveal">
+        <div class="reel reveal {{ 'has-video' if site.hero_video }}">
             {% if site.hero_video %}
-            <video class="reel-video" src="{{ site.hero_video }}" autoplay muted loop playsinline></video>
+            <video class="reel-video" src="{{ site.hero_video }}" autoplay muted loop playsinline controls></video>
             {% else %}
             <div class="reel-slide" style="background-image:url('{{ site.hero_image }}')"></div>
             <div class="reel-slide" style="background-image:url('{{ site.story_image }}')"></div>
@@ -136,8 +136,24 @@
     </div>
 </section>
 
+{% if site.cert_image %}
+<!-- VERIFIED (compact) -->
+<section class="section" style="padding-top:0;padding-bottom:0">
+    <div class="container">
+        <a href="{{ site.cert_image }}" target="_blank" class="verified-mini reveal" title="View our certificate">
+            <img src="{{ site.cert_image }}" alt="{{ site.cert_label or 'Certificate' }}">
+            <div class="vm-text">
+                <span class="eyebrow">Verified Business ✓</span>
+                <strong>{{ site.cert_label or 'Officially Verified' }}</strong>
+                <span class="muted-sm">Registered &amp; verified — tap to view our certificate.</span>
+            </div>
+        </a>
+    </div>
+</section>
+{% endif %}
+
 <!-- NEWSLETTER -->
-<section class="section">
+<section class="section" style="padding-top:56px">
     <div class="container">
         <div class="newsletter reveal">
             <span class="eyebrow">Join the Family</span>

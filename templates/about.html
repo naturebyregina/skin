@@ -51,22 +51,6 @@
     </div>
 </section>
 
-{% if site.cert_image %}
-<section class="section">
-    <div class="container">
-        <div class="text-center reveal">
-            <span class="eyebrow">Trust & Verification</span>
-            <h2>{{ site.cert_label or 'Officially Verified' }}</h2>
-            <p class="section-lead">We're a registered, verified business — here's our certificate.</p>
-        </div>
-        <a href="{{ site.cert_image }}" target="_blank" class="cert-display reveal">
-            <img src="{{ site.cert_image }}" alt="{{ site.cert_label or 'Certificate' }}">
-            <span class="cert-zoom">🔍 Tap to view full size</span>
-        </a>
-    </div>
-</section>
-{% endif %}
-
 <section class="section bg-beige">
     <div class="container">
         <div class="newsletter reveal">

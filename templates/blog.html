@@ -27,4 +27,21 @@
         </div>
     </div>
 </section>
+
+{% if site.cert_image %}
+<section class="section bg-beige">
+    <div class="container">
+        <div class="verified-strip reveal">
+            <div class="vs-text">
+                <span class="eyebrow">Verified Business ✓</span>
+                <h2>{{ site.cert_label or 'Officially Verified' }}</h2>
+                <p>We're a registered, verified skincare brand. Here's our certificate — your assurance of authentic, safe products.</p>
+            </div>
+            <a href="{{ site.cert_image }}" target="_blank" class="vs-cert" title="View full certificate">
+                <img src="{{ site.cert_image }}" alt="{{ site.cert_label or 'Certificate' }}">
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
 {% endblock %}
