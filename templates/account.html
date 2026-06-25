@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% from "_macros.html" import product_card %}
+{% block title %}My Account — Nature by Regina{% endblock %}
+{% block content %}
+
+<section class="page-head">
+    <div class="container">
+        <span class="eyebrow">Your space</span>
+        <h1>Hello, {{ user.first_name }}</h1>
+    </div>
+</section>
+
+<section class="section" style="padding-top:50px">
+    <div class="container">
+        <div class="dash-layout">
+            <aside class="dash-side reveal">
+                <div class="dash-avatar" id="dash-avatar">
+                    {% if user.photo %}<img src="{{ user.photo }}" alt="{{ user.first_name }}">{% else %}{{ user.first_name[0]|upper }}{% endif %}
+                </div>
+                <label class="avatar-upload">
+                    <span id="avatar-status">📷 {{ 'Change photo' if user.photo else 'Add a photo' }}</span>
+                    <input type="file" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+                </label>
+                <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+                <p style="font-size:0.85rem">{{ user.email }}</p>
+                <ul class="dash-nav">
+                    <li><a href="#overview" class="active">📊 Overview</a></li>
+                    <li><a href="#orders">📦 Orders</a></li>
+                    <li><a href="#loyalty">🎁 Loyalty & Rewards</a></li>
+                    <li><a href="/wishlist">♡ Wishlist</a></li>
+                    <li><a href="/logout">↪ Logout</a></li>
+                </ul>
+            </aside>
+
+            <div>
+                <div id="overview" class="stat-grid">
+                    <div class="stat-box reveal"><div class="v">{{ orders|length }}</div><div class="l">Orders</div></div>
+                    <div class="stat-box reveal reveal-d1"><div class="v">{{ user.loyalty_points }}</div><div class="l">Points</div></div>
+                    <div class="stat-box reveal reveal-d2"><div class="v">{{ tier[0] }}</div><div class="l">Tier</div></div>
+                    <div class="stat-box reveal reveal-d3"><div class="v">{{ wishlist|length }}</div><div class="l">Saved</div></div>
+                </div>
+
+                <!-- LOYALTY -->
+                <div id="loyalty" class="tier-card reveal">
+                    <span class="eyebrow">Loyalty Status</span>
+                    <h3 style="margin-top:6px">{{ tier[0] }} Member · {{ tier[2] }}</h3>
+                    {% if next_tier %}
+                    <div class="tier-bar"><i style="width:{{ ((user.loyalty_points / next_tier[1]) * 100)|round|int if next_tier[1] else 100 }}%"></i></div>
+                    <p>{{ next_tier[1] - user.loyalty_points }} points to {{ next_tier[0] }} — {{ next_tier[2] }}</p>
+                    {% else %}
+                    <div class="tier-bar"><i style="width:100%"></i></div>
+                    <p>You've reached our highest tier. Thank you for being part of the family 💚</p>
+                    {% endif %}
+                    <p style="margin-top:14px;font-size:0.85rem">Your referral code: <strong style="color:var(--gold-400)">{{ user.referral_code or 'REGINA' }}</strong> — share it and you both earn rewards.</p>
+                </div>
+
+                <!-- ORDERS -->
+                <div id="orders" class="panel reveal">
+                    <h3>Order History</h3>
+                    {% if orders %}
+                        {% for o in orders %}
+                        <div class="order-row">
+                            <div>
+                                <strong>{{ o.order_code }}</strong>
+                                <div style="font-size:0.82rem;color:var(--muted)">{{ o.created_at[:10] }} · {{ o.shipping_method }}</div>
+                            </div>
+                            <span class="status-pill status-{{ o.status }}">{{ o.status }}</span>
+                            <strong>₦{{ "{:,.0f}".format(o.total) }}</strong>
+                            <a href="/order/{{ o.order_code }}" class="btn btn-outline btn-sm">Track</a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state" style="padding:40px"><div class="ic">📦</div><p>No orders yet.</p><a href="/shop" class="btn btn-primary" style="margin-top:16px">Start Shopping</a></div>
+                    {% endif %}
+                </div>
+
+                <!-- WISHLIST -->
+                {% if wishlist %}
+                <div class="panel reveal">
+                    <h3>Your Wishlist</h3>
+                    <div class="grid" style="margin-top:10px">
+                        {% for p in wishlist %}{{ product_card(p) }}{% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+function uploadAvatar(input){
+    const file = input.files[0];
+    if(!file) return;
+    const status = document.getElementById('avatar-status');
+    status.textContent = 'Uploading…';
+    const fd = new FormData(); fd.append('file', file);
+    fetch('/api/profile/photo', {method:'POST', body: fd})
+        .then(r=>r.json()).then(d=>{
+            if(d.success){
+                document.getElementById('dash-avatar').innerHTML = `<img src="${d.path}" alt="">`;
+                status.textContent = '✓ Photo updated';
+                toast('Profile photo updated 🌿');
+            } else { status.textContent = d.error || 'Upload failed'; }
+        }).catch(()=> status.textContent = 'Upload failed');
+}
+</script>
+{% endblock %}

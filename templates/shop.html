@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "_macros.html" import product_card %}
+{% block title %}Shop — Nature by Regina{% endblock %}
+{% block content %}
+
+<section class="page-head has-bg" style="background-image:url('https://d8j0ntlcm91z4.cloudfront.net/user_3F6A4QnrUxEAuUqDhB4JNzu47Nf/hf_20260625_002246_13e59890-5d65-4bd2-87ed-5175df5b1db4.png')">
+    <div class="container">
+        <span class="eyebrow">The Collection</span>
+        <h1>Shop Natural Skincare</h1>
+        <div class="breadcrumb"><a href="/">Home</a> / Shop</div>
+    </div>
+</section>
+
+<section class="section" style="padding-top:50px">
+    <div class="container">
+        <div class="shop-toolbar">
+            <div class="chips">
+                <a href="/shop" class="chip {{ 'active' if active_category == 'all' }}">All</a>
+                {% for c in categories %}
+                <a href="/shop?category={{ c }}&sort={{ active_sort }}" class="chip {{ 'active' if active_category == c }}">{{ c }}</a>
+                {% endfor %}
+            </div>
+            <select class="select-sort" onchange="location.href='/shop?category={{ active_category }}&sort='+this.value">
+                <option value="featured" {{ 'selected' if active_sort=='featured' }}>Featured</option>
+                <option value="price-low" {{ 'selected' if active_sort=='price-low' }}>Price: Low to High</option>
+                <option value="price-high" {{ 'selected' if active_sort=='price-high' }}>Price: High to Low</option>
+                <option value="rating" {{ 'selected' if active_sort=='rating' }}>Top Rated</option>
+            </select>
+        </div>
+
+        {% if products %}
+        <div class="grid">
+            {% for p in products %}{{ product_card(p) }}{% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state"><div class="ic">🌿</div><h3>No products here yet</h3><p>Try another category.</p></div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

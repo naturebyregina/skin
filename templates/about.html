@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Our Story — Nature by Regina{% endblock %}
+{% block content %}
+
+<section class="page-head has-bg" style="background-image:url('https://d8j0ntlcm91z4.cloudfront.net/user_3F6A4QnrUxEAuUqDhB4JNzu47Nf/hf_20260625_002248_ce327009-93a2-4644-b9da-ce5afd7c9287.jpeg')">
+    <div class="container">
+        <span class="eyebrow">Est. with love</span>
+        <h1>Our Story</h1>
+        <p class="section-lead">Rooted in tradition, crafted for today.</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="split">
+            <div class="split-media has-img reveal"><img src="{{ site.story_image }}" alt="{{ site.brand_name }}"></div>
+            <div class="split-text reveal reveal-d1">
+                <span class="eyebrow">The Beginning</span>
+                <h2>A passion for natural beauty</h2>
+                <p>Nature by Regina was born from a simple belief: that the best skincare comes from the earth, not a laboratory. What began in Regina's kitchen — whipping shea butter and curing black soap by hand — has grown into a beloved natural skincare house.</p>
+                <p>Every formula honours the African botanical wisdom passed down through generations, elevated with a commitment to quality, transparency and care.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section bg-green">
+    <div class="container text-center">
+        <span class="eyebrow">What we stand for</span>
+        <h2>Our values</h2>
+        <div class="steps" style="margin-top:50px">
+            <div class="step reveal"><div class="circle" style="background:rgba(255,255,255,0.08)">🌿</div><h3 style="color:#fff">Natural</h3><p>Only honest, plant-based ingredients you can pronounce.</p></div>
+            <div class="step reveal reveal-d1"><div class="circle" style="background:rgba(255,255,255,0.08)">🤝</div><h3 style="color:#fff">Trust</h3><p>Full transparency in everything we make and share.</p></div>
+            <div class="step reveal reveal-d2"><div class="circle" style="background:rgba(255,255,255,0.08)">✋</div><h3 style="color:#fff">Handcrafted</h3><p>Small batches, made with patience and care.</p></div>
+            <div class="step reveal reveal-d3"><div class="circle" style="background:rgba(255,255,255,0.08)">💚</div><h3 style="color:#fff">Community</h3><p>A family of people who treat themselves, and stay healthy.</p></div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="split reverse">
+            <div class="split-media has-img reveal"><img src="{{ site.hero_image }}" alt="{{ site.brand_name }} collection"></div>
+            <div class="split-text reveal reveal-d1">
+                <span class="eyebrow">Our Promise</span>
+                <h2>Beauty that gives back</h2>
+                <p>We source ethically, support local growers, and never test on animals. When you choose Nature by Regina, you choose skincare that's kind to your skin, to communities, and to the planet.</p>
+                <a href="/shop" class="btn btn-primary" style="margin-top:24px">Explore the Collection</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section bg-beige">
+    <div class="container">
+        <div class="newsletter reveal">
+            <span class="eyebrow">Join the Family</span>
+            <h2>Begin your ritual</h2>
+            <p>Subscribe for skincare wisdom, new launches and 10% off your first order.</p>
+            <form class="news-form" onsubmit="return submitNewsletter(event)">
+                <input type="email" placeholder="Your email address" required>
+                <button type="submit" class="btn btn-gold">Subscribe</button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

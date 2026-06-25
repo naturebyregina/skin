@@ -1,0 +1,45 @@
+{% extends "admin/admin_base.html" %}
+{% from "_macros.html" import media %}
+{% set active = 'products' %}
+{% block title %}Products — Admin{% endblock %}
+{% block heading %}Products{% endblock %}
+{% block content %}
+
+<div class="admin-toolbar">
+    <p>{{ products|length }} product{{ 's' if products|length != 1 }}</p>
+    <a href="/admin/products/new" class="btn btn-primary btn-sm">+ Add Product</a>
+</div>
+
+<div class="admin-card">
+    <table class="admin-table">
+        <thead><tr><th></th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Rating</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for p in products %}
+        <tr id="prow-{{ p.id }}">
+            <td class="cell-img">{{ media(p.image, p.name) }}</td>
+            <td><strong>{{ p.name }}</strong>{% if p.badge %} <span class="mini-badge">{{ p.badge }}</span>{% endif %}</td>
+            <td>{{ p.category }}</td>
+            <td>₦{{ "{:,.0f}".format(p.price) }}</td>
+            <td><span class="stock-tag {{ 'low' if p.stock < 15 }}">{{ p.stock }}</span></td>
+            <td>⭐ {{ p.rating }}</td>
+            <td class="row-actions">
+                <a href="/admin/products/{{ p.id }}/edit" class="link-edit">Edit</a>
+                <button class="link-del" onclick="deleteProduct({{ p.id }}, '{{ p.name }}')">Delete</button>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function deleteProduct(id, name){
+    if(!confirm('Delete "'+name+'"? This cannot be undone.')) return;
+    fetch('/api/admin/product/'+id+'/delete', {method:'POST'})
+        .then(r=>r.json()).then(d=>{
+            if(d.success){ document.getElementById('prow-'+id).remove(); toast('Product deleted'); }
+        });
+}
+</script>
+{% endblock %}

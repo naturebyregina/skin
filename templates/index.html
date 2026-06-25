@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% from "_macros.html" import product_card %}
+{% block title %}Nature by Regina — Luxury Natural Skincare{% endblock %}
+{% block content %}
+
+<!-- HERO -->
+<section class="hero">
+    <div class="botanical" data-parallax="0.15" style="top:12%;left:6%;font-size:3rem">🌿</div>
+    <div class="botanical" data-parallax="0.28" style="bottom:14%;left:14%;font-size:2.2rem">🍃</div>
+    <div class="botanical" data-parallax="0.2" style="top:24%;right:42%;font-size:2.6rem">🌱</div>
+    <div class="container">
+        <div class="hero-inner">
+            <span class="eyebrow">{{ site.hero_eyebrow }}</span>
+            <h1>{{ site.hero_title }}</h1>
+            <p class="hero-sub">{{ site.hero_subtitle }}</p>
+            <div class="hero-cta">
+                <a href="/shop" class="btn btn-primary">Shop the Collection</a>
+                <a href="/about" class="btn btn-outline">Our Story</a>
+            </div>
+            <div class="hero-stats">
+                <div><div class="num">100%</div><div class="lbl">Natural</div></div>
+                <div><div class="num">8+</div><div class="lbl">Products</div></div>
+                <div><div class="num">4.9★</div><div class="lbl">Loved by all</div></div>
+            </div>
+        </div>
+    </div>
+    <div class="hero-visual"><div class="hero-photo"><img src="{{ site.hero_image }}" alt="{{ site.brand_name }} collection"></div></div>
+    <div class="hero-scroll">Scroll<div class="line"></div></div>
+</section>
+
+<!-- TRUST BAR -->
+<div class="trust-bar">
+    <div class="container">
+        <div class="item"><span>🌿</span> 100% Natural Ingredients</div>
+        <div class="item"><span>🐰</span> Cruelty-Free</div>
+        <div class="item"><span>✋</span> Handcrafted Small Batches</div>
+        <div class="item"><span>🚚</span> Nationwide Delivery</div>
+    </div>
+</div>
+
+<!-- FEATURED -->
+<section class="section">
+    <div class="container">
+        <div class="text-center reveal">
+            <span class="eyebrow">Bestsellers</span>
+            <h2>Loved by our community</h2>
+            <p class="section-lead">A curated edit of the products our customers reach for again and again.</p>
+        </div>
+        <div class="grid" style="margin-top:54px">
+            {% for p in featured_products %}{{ product_card(p) }}{% endfor %}
+        </div>
+        <div class="text-center" style="margin-top:48px">
+            <a href="/shop" class="btn btn-outline">View All Products</a>
+        </div>
+    </div>
+</section>
+
+<!-- STORY SPLIT -->
+<section class="section bg-beige">
+    <div class="container">
+        <div class="split">
+            <div class="split-media has-img reveal" data-parallax="0.04"><img src="{{ site.story_image }}" alt="Handcrafted by {{ site.brand_name }}"></div>
+            <div class="split-text reveal reveal-d1">
+                <span class="eyebrow">Our Philosophy</span>
+                <h2>Skincare the way nature intended</h2>
+                <p>At Nature by Regina, we believe healthy skin begins with honest ingredients. Every product is handcrafted in small batches, blending time-honoured African traditions with modern skincare science.</p>
+                <ul class="feature-list">
+                    <li><span class="dot">✓</span> No harsh synthetics, ever — only what your skin recognises</li>
+                    <li><span class="dot">✓</span> Ethically sourced shea butter and botanical oils</li>
+                    <li><span class="dot">✓</span> Formulated for every skin type, tone and texture</li>
+                </ul>
+                <a href="/about" class="btn btn-primary" style="margin-top:28px">Discover Our Story</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- RITUAL STEPS -->
+<section class="section">
+    <div class="container text-center">
+        <div class="reveal">
+            <span class="eyebrow">The Ritual</span>
+            <h2>Your daily glow, in four steps</h2>
+        </div>
+        <div class="steps">
+            <div class="step reveal"><div class="circle">🧼</div><div class="n">STEP 01</div><h3>Cleanse</h3><p>Purify gently with African Black Soap.</p></div>
+            <div class="step reveal reveal-d1"><div class="circle">✨</div><div class="n">STEP 02</div><h3>Exfoliate</h3><p>Reveal radiance with Turmeric Scrub.</p></div>
+            <div class="step reveal reveal-d2"><div class="circle">💧</div><div class="n">STEP 03</div><h3>Treat</h3><p>Nourish deeply with our Face Serum.</p></div>
+            <div class="step reveal reveal-d3"><div class="circle">🧈</div><div class="n">STEP 04</div><h3>Moisturise</h3><p>Seal it all in with rich Body Butter.</p></div>
+        </div>
+    </div>
+</section>
+
+<!-- BRAND REEL -->
+<section class="section">
+    <div class="container">
+        <div class="text-center reveal" style="margin-bottom:46px">
+            <span class="eyebrow">In Motion</span>
+            <h2>The Nature by Regina ritual</h2>
+        </div>
+        <div class="reel reveal">
+            {% if site.hero_video %}
+            <video class="reel-video" src="{{ site.hero_video }}" autoplay muted loop playsinline></video>
+            {% else %}
+            <div class="reel-slide" style="background-image:url('{{ site.hero_image }}')"></div>
+            <div class="reel-slide" style="background-image:url('{{ site.story_image }}')"></div>
+            <div class="reel-slide" style="background-image:url('/static/img/black-soap.jpg')"></div>
+            <div class="reel-slide" style="background-image:url('/static/img/body-butter.jpg')"></div>
+            <div class="reel-slide" style="background-image:url('/static/img/lemon-soap.jpg')"></div>
+            {% endif %}
+            <div class="reel-overlay">
+                {% if not site.hero_video %}<div class="reel-play">▶</div>{% endif %}
+                <h2>{{ site.tagline.strip('…. ') if site.tagline else 'Treat yourself, stay healthy' }}</h2>
+                <p>Handcrafted in small batches with nature's finest botanicals.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section bg-beige">
+    <div class="container text-center">
+        <div class="reveal">
+            <span class="eyebrow">Kind Words</span>
+            <h2>What our family says</h2>
+        </div>
+        <div class="testi-grid">
+            {% for t in testimonials %}
+            <div class="testi reveal {{ 'reveal-d' ~ loop.index0 if loop.index0 else '' }}">
+                <div class="stars">★★★★★</div>
+                <p>{{ t.comment }}</p>
+                <div class="who">{{ t.author }}{{ ' · ' ~ t.role if t.role }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- NEWSLETTER -->
+<section class="section">
+    <div class="container">
+        <div class="newsletter reveal">
+            <span class="eyebrow">Join the Family</span>
+            <h2>Glow with us</h2>
+            <p>Be first to hear about new launches, skincare rituals and members-only offers. Plus 10% off your first order.</p>
+            <form class="news-form" onsubmit="return submitNewsletter(event)">
+                <input type="email" placeholder="Your email address" required>
+                <button type="submit" class="btn btn-gold">Subscribe</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

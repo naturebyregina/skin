@@ -1,0 +1,101 @@
+{% extends "admin/admin_base.html" %}
+{% set active = 'products' %}
+{% block title %}{{ 'Edit' if product else 'New' }} Product — Admin{% endblock %}
+{% block heading %}{{ 'Edit Product' if product else 'New Product' }}{% endblock %}
+{% block content %}
+
+<div class="admin-card" style="max-width:780px">
+    <form onsubmit="saveProduct(event)">
+        <input type="hidden" id="pid" value="{{ product.id if product else '' }}">
+
+        <div class="upload-row">
+            <div class="img-preview" id="img-preview">
+                {% if product and product.image and (product.image.startswith('/') or product.image.startswith('http')) %}
+                    <img src="{{ product.image }}" alt="">
+                {% elif product and product.image %}
+                    <span class="emoji-big">{{ product.image }}</span>
+                {% else %}
+                    <span class="ph">🌿</span>
+                {% endif %}
+            </div>
+            <div class="upload-controls">
+                <label class="btn btn-outline btn-sm" style="cursor:pointer">
+                    📷 Upload Photo
+                    <input type="file" id="file" accept="image/*" style="display:none" onchange="uploadImage(this)">
+                </label>
+                <p class="muted-sm" id="upload-status">JPG, PNG or WEBP. Or type an emoji below.</p>
+                <input type="hidden" id="image" value="{{ product.image if product else '' }}">
+                <input id="image-text" placeholder="…or an emoji e.g. 🌿" value="{{ product.image if product and not (product.image.startswith('/') or product.image.startswith('http')) else '' }}" oninput="document.getElementById('image').value=this.value; renderPreview(this.value)">
+            </div>
+        </div>
+
+        <div class="row-2">
+            <div class="field"><label>Name</label><input id="name" value="{{ product.name if product else '' }}" required></div>
+            <div class="field"><label>Category</label>
+                <input id="category" list="cat-list" value="{{ product.category if product else '' }}" placeholder="Type or pick a category" autocomplete="off" required>
+                <datalist id="cat-list">
+                    {% for c in categories %}<option value="{{ c }}">{% endfor %}
+                </datalist>
+                <p class="muted-sm">Type a new name to create a new category.</p>
+            </div>
+        </div>
+        <div class="row-2">
+            <div class="field"><label>Price (₦)</label><input id="price" type="number" step="50" value="{{ product.price|int if product else '' }}" required></div>
+            <div class="field"><label>Stock</label><input id="stock" type="number" value="{{ product.stock if product else 10 }}" required></div>
+        </div>
+        <div class="field"><label>Badge (optional)</label><input id="badge" value="{{ product.badge if product and product.badge else '' }}" placeholder="Bestseller, New, Loved…"></div>
+        <div class="field"><label>Description</label><textarea id="description" rows="3">{{ product.description if product else '' }}</textarea></div>
+        <div class="field"><label>Ingredients</label><textarea id="ingredients" rows="2">{{ product.ingredients if product and product.ingredients else '' }}</textarea></div>
+        <div class="field"><label>Benefits (separate with | )</label><input id="benefits" value="{{ product.benefits if product and product.benefits else '' }}" placeholder="Hydrating|Brightening|Gentle"></div>
+
+        <div style="display:flex;gap:12px;margin-top:10px">
+            <button type="submit" class="btn btn-primary">{{ 'Save Changes' if product else 'Create Product' }}</button>
+            <a href="/admin/products" class="btn btn-outline">Cancel</a>
+        </div>
+        <div class="form-error" id="error"></div>
+    </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function renderPreview(val){
+    const box = document.getElementById('img-preview');
+    if(val && (val.startsWith('/') || val.startsWith('http'))) box.innerHTML = `<img src="${val}" alt="">`;
+    else if(val) box.innerHTML = `<span class="emoji-big">${val}</span>`;
+    else box.innerHTML = `<span class="ph">🌿</span>`;
+}
+
+function uploadImage(input){
+    const file = input.files[0];
+    if(!file) return;
+    const status = document.getElementById('upload-status');
+    status.textContent = 'Uploading…';
+    const fd = new FormData();
+    fd.append('file', file);
+    fetch('/api/admin/upload', {method:'POST', body: fd})
+        .then(r=>r.json()).then(d=>{
+            if(d.success){
+                document.getElementById('image').value = d.path;
+                document.getElementById('image-text').value = '';
+                renderPreview(d.path);
+                status.textContent = '✓ Photo uploaded';
+            } else { status.textContent = d.error || 'Upload failed'; }
+        }).catch(()=> status.textContent = 'Upload failed');
+}
+
+function saveProduct(e){
+    e.preventDefault();
+    const g = id => document.getElementById(id).value;
+    const body = {
+        id: g('pid') || null, name: g('name'), image: g('image') || g('image-text'),
+        category: g('category'), badge: g('badge'), price: g('price'), stock: g('stock'),
+        description: g('description'), ingredients: g('ingredients'), benefits: g('benefits')
+    };
+    fetch('/api/admin/product/save', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)})
+        .then(r=>r.json()).then(d=>{
+            if(d.success){ toast('Saved 🌿'); setTimeout(()=>location.href='/admin/products', 700); }
+            else err(d.error);
+        });
+}
+</script>
+{% endblock %}

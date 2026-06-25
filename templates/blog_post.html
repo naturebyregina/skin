@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} — Nature by Regina{% endblock %}
+{% block content %}
+
+<section class="section" style="padding-top:60px">
+    <div class="container">
+        <article class="article">
+            <div class="breadcrumb" style="margin-bottom:24px"><a href="/blog">Journal</a> / {{ post.category }}</div>
+            <span class="eyebrow">{{ post.category }} · {{ post.read_time }} · {{ post.author }}</span>
+            <h1 class="reveal">{{ post.title }}</h1>
+            <div class="cover-lg reveal">{{ post.image }}</div>
+            {% for para in post.body.split('\n\n') %}
+            <p class="reveal">{{ para }}</p>
+            {% endfor %}
+            <div style="border-top:1px solid var(--beige-300);margin-top:30px;padding-top:30px">
+                <a href="/shop" class="btn btn-primary">Shop the Collection</a>
+            </div>
+        </article>
+    </div>
+</section>
+
+{% if others %}
+<section class="section bg-beige">
+    <div class="container">
+        <div class="text-center reveal"><span class="eyebrow">Keep reading</span><h2>More from the Journal</h2></div>
+        <div class="blog-grid" style="margin-top:44px">
+            {% for post in others %}
+            <a href="/blog/{{ post.slug }}" class="blog-card reveal">
+                <div class="cover">{{ post.image }}</div>
+                <div class="bc-body">
+                    <div class="meta">{{ post.category }} · {{ post.read_time }}</div>
+                    <h3>{{ post.title }}</h3>
+                    <p>{{ post.excerpt }}</p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

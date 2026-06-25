@@ -1,0 +1,85 @@
+{% extends "admin/admin_base.html" %}
+{% set active = 'testimonials' %}
+{% block title %}Testimonials — Admin{% endblock %}
+{% block heading %}Testimonials{% endblock %}
+{% block content %}
+
+<div class="admin-grid-2">
+    <div class="admin-card">
+        <h3 id="form-title">Add a Testimonial</h3>
+        <form onsubmit="saveTesti(event)">
+            <input type="hidden" id="t-id" value="">
+            <div class="row-2">
+                <div class="field"><label>Author</label><input id="t-author" required></div>
+                <div class="field"><label>Role / Label</label><input id="t-role" placeholder="Verified Customer"></div>
+            </div>
+            <div class="field"><label>Rating</label>
+                <select id="t-rating">
+                    <option value="5">★★★★★ (5)</option>
+                    <option value="4">★★★★ (4)</option>
+                    <option value="3">★★★ (3)</option>
+                </select>
+            </div>
+            <div class="field"><label>Testimonial</label><textarea id="t-comment" rows="4" required></textarea></div>
+            <div style="display:flex;gap:10px">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" class="btn btn-outline" onclick="resetForm()">Clear</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="admin-card">
+        <h3>Published ({{ items|length }})</h3>
+        {% if items %}
+        <div class="testi-admin-list">
+            {% for t in items %}
+            <div class="testi-admin" id="testi-{{ t.id }}">
+                <div class="stars" style="color:var(--gold-500)">{{ '★' * (t.rating|round(0,'floor')|int) }}</div>
+                <p>"{{ t.comment }}"</p>
+                <div class="ta-foot">
+                    <span class="muted-sm">{{ t.author }}{{ ' · ' ~ t.role if t.role }}</span>
+                    <span class="row-actions">
+                        <button class="link-edit" onclick='editTesti({{ t.id }}, {{ t.author|tojson }}, {{ (t.role or "")|tojson }}, {{ t.rating }}, {{ t.comment|tojson }})'>Edit</button>
+                        <button class="link-del" onclick="delTesti({{ t.id }})">Delete</button>
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}<p class="admin-empty">No testimonials yet.</p>{% endif %}
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function resetForm(){
+    document.getElementById('t-id').value='';
+    document.getElementById('t-author').value='';
+    document.getElementById('t-role').value='';
+    document.getElementById('t-rating').value='5';
+    document.getElementById('t-comment').value='';
+    document.getElementById('form-title').textContent='Add a Testimonial';
+}
+function editTesti(id, author, role, rating, comment){
+    document.getElementById('t-id').value=id;
+    document.getElementById('t-author').value=author;
+    document.getElementById('t-role').value=role;
+    document.getElementById('t-rating').value=String(Math.round(rating));
+    document.getElementById('t-comment').value=comment;
+    document.getElementById('form-title').textContent='Edit Testimonial';
+    window.scrollTo({top:0,behavior:'smooth'});
+}
+function saveTesti(e){
+    e.preventDefault();
+    const g = id => document.getElementById(id).value;
+    fetch('/api/admin/testimonial/save', {method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({id:g('t-id')||null, author:g('t-author'), role:g('t-role'), rating:g('t-rating'), comment:g('t-comment')})})
+        .then(r=>r.json()).then(d=>{ if(d.success){ toast('Saved 🌿'); setTimeout(()=>location.reload(),600); } });
+}
+function delTesti(id){
+    if(!confirm('Delete this testimonial?')) return;
+    fetch('/api/admin/testimonial/'+id+'/delete', {method:'POST'})
+        .then(r=>r.json()).then(d=>{ if(d.success){ document.getElementById('testi-'+id).remove(); toast('Deleted'); } });
+}
+</script>
+{% endblock %}

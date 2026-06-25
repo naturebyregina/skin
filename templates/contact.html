@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Contact — Nature by Regina{% endblock %}
+{% block content %}
+
+<section class="page-head has-bg" style="background-image:url('https://d8j0ntlcm91z4.cloudfront.net/user_3F6A4QnrUxEAuUqDhB4JNzu47Nf/hf_20260625_002250_5a01a30c-9576-4589-8fac-7c803c8fde69.jpeg')">
+    <div class="container">
+        <span class="eyebrow">We'd love to hear from you</span>
+        <h1>Get in Touch</h1>
+    </div>
+</section>
+
+<section class="section" style="padding-top:50px">
+    <div class="container">
+        <div class="split">
+            <div class="split-text reveal">
+                <span class="eyebrow">Reach us</span>
+                <h2>Let's talk skincare</h2>
+                <p>Whether you need help choosing a product or have a question about your order, Regina's Team is here for you.</p>
+                <ul class="feature-list" style="margin-top:26px">
+                    <li><span class="dot">💬</span> Phone: {{ site.contact_phone }}</li>
+                    <li><span class="dot">✉️</span> {{ site.contact_email }}</li>
+                    <li><span class="dot">📍</span> {{ site.contact_address }}</li>
+                    <li><span class="dot">🕑</span> {{ site.contact_hours }}</li>
+                </ul>
+            </div>
+            <div class="panel reveal reveal-d1">
+                <h3>Send a message</h3>
+                <form onsubmit="event.preventDefault(); toast('Message sent — we\'ll reply soon 💚'); this.reset();">
+                    <div class="field"><label>Name</label><input type="text" required></div>
+                    <div class="field"><label>Email</label><input type="email" required></div>
+                    <div class="field"><label>Message</label><textarea rows="4" required></textarea></div>
+                    <button type="submit" class="btn btn-primary btn-block">Send Message</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CONSULTATION BOOKING (Google Calendar) -->
+<section class="section bg-beige">
+    <div class="container">
+        <div class="split">
+            <div class="split-text reveal">
+                <span class="eyebrow">Skincare Consultation</span>
+                <h2>Book a free chat with Regina</h2>
+                <p>Unsure where to start? Book a complimentary 20-minute consultation. Pick a time and add it straight to your Google Calendar — we'll send a reminder.</p>
+                <ul class="feature-list" style="margin-top:22px">
+                    <li><span class="dot">💚</span> Personalised product recommendations</li>
+                    <li><span class="dot">🌿</span> Routine guidance for your skin type</li>
+                    <li><span class="dot">📅</span> Instantly added to your calendar</li>
+                </ul>
+            </div>
+            <div class="panel reveal reveal-d1">
+                <h3>Choose a time</h3>
+                <div class="field"><label>Your name</label><input id="c-name" placeholder="Your name" value="{{ session.get('user_name','') }}"></div>
+                <div class="row-2">
+                    <div class="field"><label>Date</label><input id="c-date" type="date"></div>
+                    <div class="field"><label>Time</label><input id="c-time" type="time" value="10:00"></div>
+                </div>
+                <div class="field"><label>Skin concern (optional)</label><input id="c-note" placeholder="e.g. dryness, glow, acne"></div>
+                <button class="btn btn-primary btn-block" onclick="bookConsult()">📅 Add to Google Calendar</button>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+function gcalLink(title, details, start, durationMin){
+    const fmt = d => d.toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+    const end = new Date(start.getTime() + durationMin*60000);
+    const p = new URLSearchParams({action:'TEMPLATE', text:title, details:details,
+        dates: fmt(start)+'/'+fmt(end), location:'Nature by Regina'});
+    return 'https://calendar.google.com/calendar/render?' + p.toString();
+}
+function bookConsult(){
+    const date = document.getElementById('c-date').value;
+    const time = document.getElementById('c-time').value || '10:00';
+    if(!date){ toast('Please choose a date'); return; }
+    const name = document.getElementById('c-name').value || 'Guest';
+    const note = document.getElementById('c-note').value;
+    const start = new Date(date + 'T' + time);
+    const url = gcalLink('Skincare Consultation with Regina',
+        'Consultation for ' + name + (note ? ' — ' + note : '') + '. Nature by Regina.',
+        start, 20);
+    window.open(url, '_blank');
+    toast('Opening Google Calendar 📅');
+}
+</script>
+{% endblock %}

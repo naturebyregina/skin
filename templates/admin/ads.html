@@ -1,0 +1,198 @@
+{% extends "admin/admin_base.html" %}
+{% set active = 'ads' %}
+{% block title %}Ad Studio — Admin{% endblock %}
+{% block heading %}Ad Studio · Photo → Video{% endblock %}
+{% block content %}
+
+{% if not has_key %}
+<div class="notice-box">
+    <strong>⚠ No video API key set.</strong>
+    Add your <em>{{ provider }}</em> API key in <a href="/admin/settings">Site Settings → Ad Studio</a> to auto-generate here —
+    or use the <strong>free daily tools</strong> below (no key, no cost).
+</div>
+{% endif %}
+
+<div class="admin-card free-tools">
+    <h3>🆓 Free daily ad videos — no API key, no cost</h3>
+    <p class="muted-sm" style="margin-bottom:14px">These tools give free image-to-video credits that refresh every day. Make a clip, download it, then upload it in your <a href="/admin/media">Media Library</a> to use anywhere on the site.</p>
+    <div class="free-tool-grid">
+        <a href="https://klingai.com" target="_blank" class="free-tool">
+            <strong>Kling AI</strong><span class="ft-badge">66 free credits/day</span>
+            <span class="muted-sm">Best free daily allowance · 720p · no card</span>
+        </a>
+        <a href="https://lumalabs.ai/dream-machine" target="_blank" class="free-tool">
+            <strong>Luma Dream Machine</strong><span class="ft-badge">~5 free/day</span>
+            <span class="muted-sm">Fast, cinematic image-to-video</span>
+        </a>
+        <a href="https://labs.google/fx/tools/flow" target="_blank" class="free-tool">
+            <strong>Google Flow (Veo)</strong><span class="ft-badge">credits w/ AI Pro</span>
+            <span class="muted-sm">Top quality · Veo 3.1</span>
+        </a>
+    </div>
+    <ol class="ft-steps">
+        <li>Open a tool, upload your product photo, and generate a short clip.</li>
+        <li>Download the MP4.</li>
+        <li>Come back and upload it in the <a href="/admin/media">Media Library</a> — done!</li>
+    </ol>
+</div>
+
+<!-- AD PROMPT GENERATOR -->
+<div class="admin-card">
+    <h3>✨ Ad Prompt Generator</h3>
+    <p class="muted-sm" style="margin-bottom:16px">Pick a product and a style, and we'll write ready-to-use prompts for any image-to-video tool. Copy a prompt, paste it into Kling / Luma / Flow with your product photo, and generate.</p>
+    <div class="prompt-controls">
+        <div class="field">
+            <label>Product</label>
+            <select id="pg-product">
+                <option value="">— choose a product —</option>
+                {% for p in products %}
+                <option value="{{ p.id }}" data-name="{{ p.name }}" data-cat="{{ p.category }}" data-benefits="{{ p.benefits or '' }}">{{ p.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="field">
+            <label>Style</label>
+            <select id="pg-style">
+                <option value="cinematic">Cinematic & Premium</option>
+                <option value="fresh">Fresh & Natural</option>
+                <option value="luxury">Luxury Glow</option>
+                <option value="social">Social / UGC</option>
+                <option value="festive">Festive / Promo</option>
+            </select>
+        </div>
+    </div>
+    <button class="btn btn-primary" onclick="genPrompts()">Generate Prompts</button>
+    <div id="pg-output" class="prompt-output"></div>
+
+    <div class="ft-steps-box">
+        <h4 style="margin-bottom:8px">How to turn it into an ad (any product)</h4>
+        <ol class="ft-steps">
+            <li><strong>Pick the product</strong> above and a style, then <strong>Generate Prompts</strong>.</li>
+            <li><strong>Copy</strong> a prompt you like.</li>
+            <li>Open a video tool (free: <a href="https://klingai.com" target="_blank">Kling</a> / <a href="https://lumalabs.ai/dream-machine" target="_blank">Luma</a> / <a href="https://labs.google/fx/tools/flow" target="_blank">Flow</a> — or use the generator above with your API key).</li>
+            <li><strong>Upload the product photo</strong>, paste the prompt, and generate the clip.</li>
+            <li><strong>Download</strong> the MP4 and upload it in the <a href="/admin/media">Media Library</a>.</li>
+            <li>To feature it on the homepage, paste its link in <a href="/admin/settings">Site Settings → Homepage Video</a>.</li>
+        </ol>
+    </div>
+</div>
+
+<div class="admin-grid-2">
+    <div class="admin-card">
+        <h3>Create an Ad Clip</h3>
+        <p class="muted-sm" style="margin-bottom:16px">Upload a product photo and turn it into a short motion ad. Provider: <strong>{{ provider }}</strong></p>
+        <div class="upload-row">
+            <div class="img-preview" id="ad-preview"><span class="ph">📷</span></div>
+            <div class="upload-controls">
+                <label class="btn btn-outline btn-sm" style="cursor:pointer">
+                    📷 Upload Photo
+                    <input type="file" id="ad-file" accept="image/*" style="display:none" onchange="uploadAdImage(this)">
+                </label>
+                <p class="muted-sm" id="ad-status">Pick a product photo to animate.</p>
+                <input type="hidden" id="ad-image-path" value="">
+            </div>
+        </div>
+        <button class="btn btn-gold btn-block" id="ad-generate" onclick="generateAd()" {{ 'disabled' if not has_key }}>🎬 Generate Ad Video</button>
+        <p class="muted-sm" style="margin-top:10px">Generation can take 1–3 minutes depending on the provider.</p>
+        <p class="muted-sm" style="margin-top:8px;border-top:1px solid var(--beige-200);padding-top:10px">
+            💡 <strong>No key yet?</strong> You can also create a clip in <a href="https://labs.google/fx/tools/flow" target="_blank">Google Flow</a>, download the MP4, and upload it in the <a href="/admin/media">Media Library</a>.
+        </p>
+    </div>
+
+    <div class="admin-card">
+        <h3>Result</h3>
+        <div id="ad-result"><p class="admin-empty">Your generated ad will appear here.</p></div>
+    </div>
+</div>
+
+<div class="admin-card" style="margin-top:22px">
+    <h3>Recent Clips</h3>
+    {% if clips %}
+    <div class="media-grid">
+        {% for c in clips %}
+        <div class="media-item">
+            <div class="media-thumb"><video src="{{ c.path }}" muted controls></video></div>
+            <div class="media-actions"><button class="link-edit" onclick="copyPath('{{ c.path }}')">Copy link</button></div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}<p class="admin-empty">No clips yet.</p>{% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function copyPath(p){ navigator.clipboard?.writeText(location.origin + p); toast('Link copied'); }
+
+const STYLES = {
+    cinematic: {motion:'slow cinematic push-in with shallow depth of field', light:'soft studio lighting, premium and clean', extra:'subtle reflections, elegant'},
+    fresh:     {motion:'gentle rotation with floating water droplets and green leaves', light:'bright natural daylight', extra:'fresh, airy, organic'},
+    luxury:    {motion:'smooth orbit with golden light sweep', light:'warm golden-hour glow, soft shadows', extra:'luxurious, glossy, high-end'},
+    social:    {motion:'quick dynamic zoom and playful bounce', light:'vibrant even lighting', extra:'fun, scroll-stopping, trendy'},
+    festive:   {motion:'sparkling reveal with confetti light bokeh', light:'warm festive lighting', extra:'celebratory, gift-ready'},
+};
+function genPrompts(){
+    const sel = document.getElementById('pg-product');
+    const opt = sel.options[sel.selectedIndex];
+    if(!sel.value){ toast('Choose a product first'); return; }
+    const name = opt.dataset.name;
+    const cat = opt.dataset.cat || 'skincare';
+    const benefits = (opt.dataset.benefits || '').split('|').filter(Boolean);
+    const benefit = benefits[0] || 'naturally radiant skin';
+    const s = STYLES[document.getElementById('pg-style').value];
+
+    const prompts = [
+        `A ${cat} product advertisement for "${name}" by Nature by Regina. ${s.motion[0].toUpperCase()+s.motion.slice(1)}, ${s.light}. The product stays in sharp focus on a clean natural surface with botanical accents. ${s.extra}. No text, 16:9, high detail.`,
+        `Close-up beauty shot of ${name}, a natural ${cat} product. ${s.light}, ${s.motion}. Soft green and beige palette, fresh botanicals around the product, dewy glow suggesting ${benefit.toLowerCase()}. Premium skincare commercial, no text.`,
+        `Hero ad clip: ${name} on a marble surface, ${s.motion}, droplets and leaves drifting gently, ${s.light}. Luxury natural skincare mood, brand "Nature by Regina", calm and aspirational. 1080p, no captions.`,
+    ];
+    const caption = `✨ Meet ${name} — for ${benefit.toLowerCase()}. 🌿 Natural. Handcrafted. Treat yourself, stay healthy. #NatureByRegina #${cat}`;
+
+    let html = prompts.map((p,i)=>`
+        <div class="prompt-item">
+            <div class="prompt-text">${p}</div>
+            <button class="btn btn-outline btn-sm" onclick="copyText(this, ${JSON.stringify(p).replace(/"/g,'&quot;')})">Copy</button>
+        </div>`).join('');
+    html += `<div class="prompt-item caption">
+            <div class="prompt-text"><strong>Caption:</strong> ${caption}</div>
+            <button class="btn btn-outline btn-sm" onclick="copyText(this, ${JSON.stringify(caption).replace(/"/g,'&quot;')})">Copy</button>
+        </div>`;
+    document.getElementById('pg-output').innerHTML = html;
+}
+function copyText(btn, text){
+    navigator.clipboard?.writeText(text);
+    const old = btn.textContent; btn.textContent = '✓ Copied'; setTimeout(()=>btn.textContent=old, 1500);
+}
+function uploadAdImage(input){
+    const file = input.files[0]; if(!file) return;
+    const status = document.getElementById('ad-status'); status.textContent = 'Uploading…';
+    const fd = new FormData(); fd.append('file', file);
+    fetch('/api/admin/media/upload', {method:'POST', body: fd})
+        .then(r=>r.json()).then(d=>{
+            if(d.success){
+                document.getElementById('ad-image-path').value = d.path;
+                document.getElementById('ad-preview').innerHTML = `<img src="${d.path}" alt="">`;
+                status.textContent = '✓ Photo ready';
+            } else status.textContent = d.error || 'Upload failed';
+        });
+}
+function generateAd(){
+    const path = document.getElementById('ad-image-path').value;
+    if(!path){ toast('Upload a photo first'); return; }
+    const btn = document.getElementById('ad-generate');
+    btn.disabled = true; btn.textContent = '⏳ Generating…';
+    document.getElementById('ad-result').innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+    fetch('/api/admin/ad/generate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({image_path: path})})
+        .then(r=>r.json()).then(d=>{
+            btn.disabled = false; btn.textContent = '🎬 Generate Ad Video';
+            if(d.success){
+                document.getElementById('ad-result').innerHTML =
+                    `<video src="${d.path}" controls autoplay muted loop style="width:100%;border-radius:14px"></video>
+                     <button class="btn btn-outline btn-sm" style="margin-top:12px" onclick="copyPath('${d.path}')">Copy link</button>`;
+                toast('Ad video ready 🎬');
+            } else {
+                document.getElementById('ad-result').innerHTML = `<p class="admin-empty">${d.error || 'Generation failed'}</p>`;
+            }
+        }).catch(()=>{ btn.disabled=false; btn.textContent='🎬 Generate Ad Video'; toast('Request failed'); });
+}
+</script>
+{% endblock %}

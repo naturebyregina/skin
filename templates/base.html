@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Nature by Regina — Luxury Natural Skincare{% endblock %}</title>
+    <meta name="description" content="Nature by Regina — luxury natural skincare, handcrafted with love. Treat yourself, stay healthy.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <style>:root{ --green-700: {{ site.color_primary }}; --gold-500: {{ site.color_accent }}; --gold-600: {{ site.color_accent }}; }</style>
+</head>
+<body>
+    <div class="promo-bar"><span>{{ site.promo_text }}</span></div>
+
+    <header class="header">
+        <div class="container">
+            <a href="/" class="logo"><img src="{{ site.logo_image }}" alt="{{ site.brand_name }}" class="logo-img"> <span class="logo-text">{{ site.brand_name }}</span></a>
+            <nav class="nav">
+                <a href="/">Home</a>
+                <a href="/shop">Shop</a>
+                <a href="/about">Our Story</a>
+                <a href="/blog">Journal</a>
+                <a href="/contact">Contact</a>
+            </nav>
+            <div class="actions">
+                <a href="/wishlist" class="desktop-only" title="Wishlist">♡</a>
+                <a href="/cart" class="cart-link">🛒 <span class="cart-badge" style="display:none">0</span></a>
+                {% if is_admin %}
+                    <a href="/admin" class="desktop-only" style="color:var(--gold-600)">⚙ Admin</a>
+                {% endif %}
+                {% if session.get('user_id') %}
+                    <a href="/account">Hi, {{ session.get('user_name') }}</a>
+                {% else %}
+                    <a href="/login" class="desktop-only">Sign In</a>
+                {% endif %}
+                <button class="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+            </div>
+        </div>
+    </header>
+
+    <div class="mobile-menu">
+        <button class="mobile-close" aria-label="Close">✕</button>
+        <a href="/">Home</a>
+        <a href="/shop">Shop</a>
+        <a href="/about">Our Story</a>
+        <a href="/blog">Journal</a>
+        <a href="/contact">Contact</a>
+        <a href="/wishlist">Wishlist</a>
+        {% if session.get('user_id') %}
+            <a href="/account">My Account</a>
+            <a href="/logout">Logout</a>
+        {% else %}
+            <a href="/login">Sign In</a>
+        {% endif %}
+    </div>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <div class="brand-name">🌿 {{ site.brand_name }}</div>
+                    <p class="tagline">"{{ site.tagline }}"</p>
+                    <div class="socials" style="margin-top:22px">
+                        <a href="{{ site.social_instagram }}" aria-label="Instagram">📷</a>
+                        <a href="{{ site.social_whatsapp }}" aria-label="WhatsApp">💬</a>
+                        <a href="{{ site.social_facebook }}" aria-label="Facebook">📘</a>
+                        <a href="{{ site.social_tiktok }}" aria-label="TikTok">🎵</a>
+                    </div>
+                </div>
+                <div>
+                    <h4>Shop</h4>
+                    <ul>
+                        <li><a href="/shop?category=soaps">Soaps</a></li>
+                        <li><a href="/shop?category=moisturizers">Moisturizers</a></li>
+                        <li><a href="/shop?category=serums">Serums</a></li>
+                        <li><a href="/shop">All Products</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="/about">Our Story</a></li>
+                        <li><a href="/blog">Journal</a></li>
+                        <li><a href="/contact">Contact</a></li>
+                        <li><a href="/faq">FAQ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Account</h4>
+                    <ul>
+                        <li><a href="/account">My Account</a></li>
+                        <li><a href="/wishlist">Wishlist</a></li>
+                        <li><a href="/cart">Cart</a></li>
+                        {% if not session.get('user_id') %}<li><a href="/register">Create Account</a></li>{% endif %}
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>&copy; {{ now_year }} Nature by Regina. All rights reserved.</span>
+                <span>Natural · Handcrafted · Cruelty-free</span>
+            </div>
+        </div>
+    </footer>
+
+    <div class="chat-widget">
+        <div class="chat-bubble" onclick="toggleChat()" title="Chat with Regina's Team">💬</div>
+        <div class="chat-modal" id="chat-modal" style="display:none;">
+            <div class="chat-header">
+                <div>
+                    <h3>Regina's Team</h3>
+                    <div class="sub">Typically replies in a few minutes</div>
+                </div>
+                <button onclick="toggleChat()" aria-label="Close">✕</button>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="msg assistant"><p>Hello lovely! 🌿 Welcome to Nature by Regina. How can we help you glow today?</p></div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="chat-text" placeholder="Ask us anything…" onkeydown="chatKey(event)">
+                <button onclick="sendChat()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

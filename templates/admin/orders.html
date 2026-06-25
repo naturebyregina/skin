@@ -1,0 +1,53 @@
+{% extends "admin/admin_base.html" %}
+{% set active = 'orders' %}
+{% block title %}Orders — Admin{% endblock %}
+{% block heading %}Orders{% endblock %}
+{% block content %}
+
+<div class="admin-toolbar"><p>{{ orders|length }} order{{ 's' if orders|length != 1 }}</p></div>
+
+<div class="admin-card">
+    {% if orders %}
+    <table class="admin-table">
+        <thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Method</th><th>Receipt</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for o in orders %}
+        <tr>
+            <td><strong>{{ o.order_code }}</strong></td>
+            <td>{{ o.first_name or 'Guest' }} {{ o.last_name or '' }}<br><span class="muted-sm">{{ o.email or '' }}</span></td>
+            <td class="muted-sm">{{ o.created_at[:16] }}</td>
+            <td>{{ o.shipping_method }}<br><span class="muted-sm">{{ o.payment_method }}</span></td>
+            <td class="admin-receipt">
+                {% if o.receipt_path %}
+                    {% if o.receipt_path.endswith('.pdf') %}<a href="{{ o.receipt_path }}" target="_blank">📄 View PDF</a>
+                    {% else %}<a href="{{ o.receipt_path }}" target="_blank"><img src="{{ o.receipt_path }}" alt="receipt"></a>{% endif %}
+                {% else %}<span class="none">—</span>{% endif %}
+            </td>
+            <td>₦{{ "{:,.0f}".format(o.total) }}</td>
+            <td>
+                <select class="status-select status-{{ o.status }}" onchange="setStatus({{ o.id }}, this)">
+                    {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if o.status == s }}>{{ s }}</option>{% endfor %}
+                </select>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}<p class="admin-empty">No orders yet.</p>{% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function setStatus(orderId, sel){
+    const status = sel.value;
+    fetch('/api/admin/order/status', {method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({order_id:orderId, status})})
+        .then(r=>r.json()).then(d=>{
+            if(d.success){
+                sel.className = 'status-select status-' + status;
+                toast('Order updated → ' + status);
+            }
+        });
+}
+</script>
+{% endblock %}

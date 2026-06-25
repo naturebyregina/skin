@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Journal — Nature by Regina{% endblock %}
+{% block content %}
+
+<section class="page-head has-bg" style="background-image:url('https://d8j0ntlcm91z4.cloudfront.net/user_3F6A4QnrUxEAuUqDhB4JNzu47Nf/hf_20260625_002012_995c67c9-7447-4edd-96d3-95fa6cb20598.png')">
+    <div class="container">
+        <span class="eyebrow">The Journal</span>
+        <h1>Skincare Wisdom</h1>
+        <p class="section-lead">Rituals, ingredients and tips for naturally radiant skin.</p>
+    </div>
+</section>
+
+<section class="section" style="padding-top:50px">
+    <div class="container">
+        <div class="blog-grid">
+            {% for post in posts %}
+            <a href="/blog/{{ post.slug }}" class="blog-card reveal">
+                <div class="cover">{{ post.image }}</div>
+                <div class="bc-body">
+                    <div class="meta">{{ post.category }} · {{ post.read_time }}</div>
+                    <h3>{{ post.title }}</h3>
+                    <p>{{ post.excerpt }}</p>
+                    <span style="color:var(--green-700);font-size:0.85rem;letter-spacing:1px;margin-top:14px;display:inline-block">Read more →</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

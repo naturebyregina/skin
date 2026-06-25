@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Order {{ order.order_code }} — Nature by Regina{% endblock %}
+{% block content %}
+
+<section class="page-head">
+    <div class="container">
+        <span class="eyebrow">Order Tracking</span>
+        <h1>{{ order.order_code }}</h1>
+        <div class="breadcrumb"><a href="/account">My Account</a> / Order</div>
+    </div>
+</section>
+
+<section class="section" style="padding-top:50px">
+    <div class="container">
+        <div class="cart-layout">
+            <div class="panel reveal">
+                <h3>Delivery Progress</h3>
+                {% set idx = statuses.index(order.status) if order.status in statuses else 0 %}
+                <div class="track-timeline">
+                    {% set labels = {'pending':['Order Placed','We have received your order'],
+                                     'confirmed':['Confirmed','Payment confirmed, preparing your order'],
+                                     'processing':['Processing','Handcrafting & packing with care'],
+                                     'shipped':['Shipped','On its way via ' ~ order.shipping_method],
+                                     'delivered':['Delivered','Enjoy your glow ✨']} %}
+                    {% for s in statuses %}
+                    {% set i = loop.index0 %}
+                    <div class="track-step {{ 'done' if i < idx else ('active' if i == idx else 'upcoming') }}">
+                        <div class="tdot">{{ '✓' if i < idx else (i+1) }}</div>
+                        <div>
+                            <h4>{{ labels[s][0] }}</h4>
+                            <p style="font-size:0.88rem">{{ labels[s][1] }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div style="background:var(--green-50);border-radius:14px;padding:18px;display:flex;gap:14px;align-items:center">
+                    <span style="font-size:1.8rem">🛵</span>
+                    <div><strong>Rider:</strong> Assigned on dispatch · <strong>Shipping:</strong> {{ order.shipping_method }}<br>
+                    <span style="font-size:0.85rem;color:var(--muted)">{{ order.address or 'Delivery address on file' }}</span></div>
+                </div>
+                <button class="btn btn-outline btn-block" style="margin-top:18px" onclick="addDeliveryReminder()">📅 Add delivery reminder to Google Calendar</button>
+            </div>
+
+            <div class="summary-card reveal reveal-d1">
+                <h3>Order Summary</h3>
+                {% for it in items %}
+                <div class="summary-row"><span>{{ it.name }} ×{{ it.quantity }}</span><span>₦{{ "{:,.0f}".format(it.price * it.quantity) }}</span></div>
+                {% endfor %}
+                <div class="summary-row"><span>Subtotal</span><span>₦{{ "{:,.0f}".format(order.subtotal) }}</span></div>
+                <div class="summary-row"><span>VAT</span><span>₦{{ "{:,.0f}".format(order.tax) }}</span></div>
+                <div class="summary-row"><span>Shipping</span><span>₦{{ "{:,.0f}".format(order.shipping) }}</span></div>
+                <div class="summary-row total"><span>Total</span><span>₦{{ "{:,.0f}".format(order.total) }}</span></div>
+                <p style="font-size:0.82rem;text-align:center;margin-top:14px">Payment: {{ order.payment_method }}</p>
+                <a href="/shop" class="btn btn-outline btn-block" style="margin-top:14px">Continue Shopping</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+{% block scripts %}
+<script>
+if (new URLSearchParams(location.search).get('new')) {
+    setTimeout(() => toast('Order placed! Thank you 💚'), 500);
+}
+
+function addDeliveryReminder(){
+    const start = new Date(); start.setDate(start.getDate() + 3); start.setHours(12,0,0,0);
+    const end = new Date(start.getTime() + 30*60000);
+    const fmt = d => d.toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+    const p = new URLSearchParams({action:'TEMPLATE',
+        text:'Nature by Regina delivery — {{ order.order_code }}',
+        details:'Expected delivery for your Nature by Regina order {{ order.order_code }}.',
+        dates: fmt(start)+'/'+fmt(end), location:'{{ order.address or "Home" }}'});
+    window.open('https://calendar.google.com/calendar/render?' + p.toString(), '_blank');
+    toast('Opening Google Calendar 📅');
+}
+</script>
+{% endblock %}

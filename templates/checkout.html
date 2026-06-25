@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}Checkout — Nature by Regina{% endblock %}
+{% block content %}
+
+<section class="page-head">
+    <div class="container">
+        <span class="eyebrow">Final step</span>
+        <h1>Checkout</h1>
+    </div>
+</section>
+
+<section class="section" style="padding-top:50px">
+    <div class="container">
+        <form onsubmit="placeOrder(event)">
+        <div class="checkout-layout">
+            <div>
+                <div class="co-section reveal">
+                    <h3><span class="num">1</span> Delivery Details</h3>
+                    <div class="row-2">
+                        <div class="field"><label>First Name</label><input id="fn" value="{{ user.first_name }}" required></div>
+                        <div class="field"><label>Last Name</label><input id="ln" value="{{ user.last_name }}" required></div>
+                    </div>
+                    <div class="field"><label>Phone</label><input id="phone" value="{{ user.phone or '' }}" placeholder="0800 000 0000" required></div>
+                    <div class="field"><label>Address</label><input id="address" value="{{ user.address or '' }}" placeholder="Street address" required></div>
+                    <div class="row-2">
+                        <div class="field"><label>City</label><input id="city" value="{{ user.city or '' }}" required></div>
+                        <div class="field"><label>State</label><input id="state" value="{{ user.state or '' }}" required></div>
+                    </div>
+                </div>
+
+                <div class="co-section reveal">
+                    <h3><span class="num">2</span> Shipping Method</h3>
+                    <div class="opt-list" id="ship-opts">
+                        <label class="opt selected"><input type="radio" name="ship" value="Local Rider" data-cost="2000" checked><span class="opt-label">Local Rider <small style="color:var(--muted)">· 1–2 days</small></span><span class="opt-price">₦2,000</span></label>
+                        <label class="opt"><input type="radio" name="ship" value="Interstate" data-cost="5000"><span class="opt-label">Interstate <small style="color:var(--muted)">· 3–5 days</small></span><span class="opt-price">₦5,000</span></label>
+                        <label class="opt"><input type="radio" name="ship" value="Air Shipping" data-cost="8000"><span class="opt-label">Air Shipping <small style="color:var(--muted)">· 1–3 days</small></span><span class="opt-price">₦8,000</span></label>
+                        <label class="opt"><input type="radio" name="ship" value="International" data-cost="15000"><span class="opt-label">International <small style="color:var(--muted)">· 7–14 days</small></span><span class="opt-price">₦15,000</span></label>
+                    </div>
+                </div>
+
+                <div class="co-section reveal">
+                    <h3><span class="num">3</span> Payment</h3>
+                    <div class="opt-list">
+                        <label class="opt selected"><input type="radio" name="pay" value="Card" checked><span class="opt-label">💳 Pay with Card {% if paystack_public_key %}<small style="color:var(--green-600)">· Secured by Paystack</small>{% else %}<small style="color:var(--muted)">· demo mode</small>{% endif %}</span></label>
+                        <label class="opt"><input type="radio" name="pay" value="Bank Transfer"><span class="opt-label">🏦 Bank Transfer</span></label>
+                        <label class="opt"><input type="radio" name="pay" value="Pay on Delivery"><span class="opt-label">📦 Pay on Delivery</span></label>
+                    </div>
+                </div>
+
+                <div class="co-section reveal" id="bank-panel" style="display:none">
+                    <h3><span class="num">✓</span> Payment Confirmation</h3>
+                    <div class="bank-box" id="bank-details">
+                        <p style="margin-bottom:10px">Please transfer your order total to {{ 'any of these accounts' if site.bank_accounts.strip().split('\n')|length > 1 else 'this account' }}:</p>
+                        {% for line in site.bank_accounts.split('\n') %}
+                        {% if line.strip() %}
+                        {% set parts = line.split('|') %}
+                        <div class="bank-acct">
+                            <div class="bank-row"><span>Bank</span><strong>{{ parts[0]|trim }}</strong></div>
+                            <div class="bank-row"><span>Account Name</span><strong>{{ parts[1]|trim if parts|length > 1 else '' }}</strong></div>
+                            <div class="bank-row"><span>Account Number</span><strong>{{ parts[2]|trim if parts|length > 2 else '' }}</strong></div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    <p style="margin:18px 0 10px" id="upload-prompt"><strong>Upload your payment receipt</strong> (screenshot or photo) so we can confirm your order.</p>
+                    <div class="receipt-upload">
+                        <div class="receipt-preview" id="receipt-preview"><span class="ph">🧾</span></div>
+                        <div>
+                            <label class="btn btn-outline btn-sm" style="cursor:pointer">
+                                📎 Upload Receipt
+                                <input type="file" id="receipt-file" accept="image/*,application/pdf" style="display:none" onchange="uploadReceipt(this)">
+                            </label>
+                            <p class="muted-sm" id="receipt-status" style="margin-top:8px">JPG, PNG or PDF accepted.</p>
+                            <input type="hidden" id="receipt-path" value="">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-card reveal reveal-d1">
+                <h3>Your Order</h3>
+                <div id="co-summary"><p>Loading…</p></div>
+                <button type="submit" class="btn btn-gold btn-block" style="margin-top:22px">Place Order</button>
+                <p style="font-size:0.78rem;text-align:center;margin-top:14px">🔒 Secure checkout · You earn loyalty points</p>
+            </div>
+        </div>
+        </form>
+    </div>
+</section>
+
+{% endblock %}
+{% block scripts %}
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script>
+const PAYSTACK_PUBLIC_KEY = "{{ paystack_public_key }}";
+const USER_EMAIL = "{{ user.email }}";
+function fmt(n){ return '₦' + Number(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
+let CART = {};
+
+document.querySelectorAll('.opt input').forEach(i => i.addEventListener('change', () => {
+    i.closest('.opt-list').querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+    i.closest('.opt').classList.add('selected');
+    if(i.name === 'ship') renderSummary();
+    if(i.name === 'pay') togglePayPanels();
+}));
+
+function togglePayPanels(){
+    const pay = document.querySelector('input[name=pay]:checked').value;
+    const show = (pay === 'Bank Transfer' || pay === 'Pay on Delivery');
+    document.getElementById('bank-panel').style.display = show ? 'block' : 'none';
+    if(!show) return;
+    const bankDetails = document.getElementById('bank-details');
+    const prompt = document.getElementById('upload-prompt');
+    if(pay === 'Pay on Delivery'){
+        bankDetails.style.display = 'none';
+        prompt.innerHTML = '<strong>Upload a confirmation photo</strong> (a clear photo of yourself or a delivery note) so our rider can verify on arrival.';
+    } else {
+        bankDetails.style.display = 'block';
+        prompt.innerHTML = '<strong>Upload your payment receipt</strong> (screenshot or photo) so we can confirm your order.';
+    }
+}
+
+function uploadReceipt(input){
+    const file = input.files[0];
+    if(!file) return;
+    const status = document.getElementById('receipt-status');
+    status.textContent = 'Uploading…';
+    const fd = new FormData(); fd.append('file', file);
+    fetch('/api/receipt/upload', {method:'POST', body: fd})
+        .then(r=>r.json()).then(d=>{
+            if(d.success){
+                document.getElementById('receipt-path').value = d.path;
+                const pv = document.getElementById('receipt-preview');
+                pv.innerHTML = d.path.endsWith('.pdf') ? '<span class="ph">📄</span>' : `<img src="${d.path}" alt="receipt">`;
+                status.textContent = '✓ Receipt uploaded';
+            } else { status.textContent = d.error || 'Upload failed'; }
+        }).catch(()=> status.textContent = 'Upload failed');
+}
+
+function shipCost(){ return parseInt(document.querySelector('input[name=ship]:checked').dataset.cost); }
+
+function renderSummary(){
+    const ship = shipCost();
+    const items = CART.items.map(i => `<div class="summary-row"><span>${i.name} ×${i.quantity}</span><span>${fmt(i.price*i.quantity)}</span></div>`).join('');
+    const total = CART.subtotal + CART.tax + ship;
+    document.getElementById('co-summary').innerHTML = items +
+        `<div class="summary-row"><span>VAT</span><span>${fmt(CART.tax)}</span></div>
+         <div class="summary-row"><span>Shipping</span><span>${fmt(ship)}</span></div>
+         <div class="summary-row total"><span>Total</span><span>${fmt(total)}</span></div>`;
+}
+
+fetch('/api/cart/get').then(r=>r.json()).then(d=>{ CART=d; renderSummary(); });
+
+function createOrder(payRef){
+    const ship = document.querySelector('input[name=ship]:checked');
+    fetch('/api/order/create',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+            shipping_method: ship.value, shipping_cost: shipCost(),
+            payment_method: document.querySelector('input[name=pay]:checked').value,
+            payment_reference: payRef || null,
+            receipt_path: document.getElementById('receipt-path').value || null,
+            address: document.getElementById('address').value,
+            city: document.getElementById('city').value,
+            state: document.getElementById('state').value
+        })
+    }).then(r=>r.json()).then(d=>{
+        if(d.success){ location.href = '/order/' + d.order_code + '?new=1'; }
+        else toast(d.error || 'Something went wrong');
+    });
+}
+
+function placeOrder(e){
+    e.preventDefault();
+    const pay = document.querySelector('input[name=pay]:checked').value;
+    const total = CART.subtotal + CART.tax + shipCost();
+
+    // Bank transfer and Pay on Delivery require a photo upload
+    if((pay === 'Bank Transfer' || pay === 'Pay on Delivery') && !document.getElementById('receipt-path').value){
+        toast(pay === 'Bank Transfer' ? 'Please upload your payment receipt to continue' : 'Please upload a confirmation photo to continue');
+        document.getElementById('bank-panel').scrollIntoView({behavior:'smooth'});
+        return;
+    }
+
+    // Card payment via Paystack (only if a public key is configured)
+    if(pay === 'Card' && PAYSTACK_PUBLIC_KEY && window.PaystackPop){
+        const handler = PaystackPop.setup({
+            key: PAYSTACK_PUBLIC_KEY,
+            email: USER_EMAIL,
+            amount: Math.round(total * 100), // amount in kobo
+            currency: 'NGN',
+            ref: 'NBR' + Date.now(),
+            onClose: function(){ toast('Payment cancelled'); },
+            callback: function(response){
+                // Verify on the server, then create the order
+                fetch('/api/paystack/verify',{method:'POST',headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({reference: response.reference})})
+                    .then(r=>r.json()).then(v=>{
+                        if(v.success){ createOrder(response.reference); }
+                        else toast(v.error || 'Payment could not be verified');
+                    });
+            }
+        });
+        handler.openIframe();
+        return;
+    }
+
+    // Card selected but Paystack not configured → demo mode; or bank transfer / POD
+    if(pay === 'Card' && !PAYSTACK_PUBLIC_KEY){
+        toast('Demo mode — completing order without live charge');
+    }
+    createOrder(null);
+}
+</script>
+{% endblock %}

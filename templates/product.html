@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% from "_macros.html" import product_card, media %}
+{% block title %}{{ product.name }} — Nature by Regina{% endblock %}
+{% block content %}
+
+<section class="section" style="padding-top:50px">
+    <div class="container">
+        <div class="breadcrumb" style="margin-bottom:30px"><a href="/">Home</a> / <a href="/shop">Shop</a> / {{ product.name }}</div>
+        <div class="product-layout">
+            <div class="product-gallery reveal">
+                <div class="gallery-main">
+                    {% if product.badge %}<span class="badge">{{ product.badge }}</span>{% endif %}
+                    {{ media(product.image, product.name) }}
+                </div>
+            </div>
+            <div class="product-info reveal reveal-d1">
+                <span class="cat">{{ product.category }}</span>
+                <h1>{{ product.name }}</h1>
+                <div class="rating-row">
+                    <span class="stars">{{ '★' * (product.rating|round(0,'floor')|int) }}{{ '☆' * (5 - (product.rating|round(0,'floor')|int)) }}</span>
+                    <span class="count">{{ product.rating }} · {{ product.reviews_count }} review{{ 's' if product.reviews_count != 1 }}</span>
+                </div>
+                <div class="product-price">₦{{ "{:,.0f}".format(product.price) }}</div>
+                <p class="product-desc">{{ product.description }}</p>
+
+                <div class="accordion">
+                    {% if product.benefits %}
+                    <div class="acc-item open">
+                        <button class="acc-head" type="button">Key Benefits <span class="pm">+</span></button>
+                        <div class="acc-body"><div class="inner"><div class="tag-row">
+                            {% for b in product.benefits.split('|') %}<span class="tag">{{ b }}</span>{% endfor %}
+                        </div></div></div>
+                    </div>
+                    {% endif %}
+                    {% if product.ingredients %}
+                    <div class="acc-item">
+                        <button class="acc-head" type="button">Ingredients <span class="pm">+</span></button>
+                        <div class="acc-body"><div class="inner">{{ product.ingredients }}</div></div>
+                    </div>
+                    {% endif %}
+                    <div class="acc-item">
+                        <button class="acc-head" type="button">Shipping & Returns <span class="pm">+</span></button>
+                        <div class="acc-body"><div class="inner">Local, interstate, air and international shipping available. Free delivery on orders over ₦80,000. Tracking provided with every order.</div></div>
+                    </div>
+                </div>
+
+                <div class="qty-add">
+                    <div class="qty">
+                        <button type="button" onclick="stepQty(-1)">−</button>
+                        <span id="qty-val">1</span>
+                        <button type="button" onclick="stepQty(1)">+</button>
+                    </div>
+                    <button class="btn btn-primary" onclick="addCartWithQty({{ product.id }})">Add to Cart</button>
+                    <button class="wish-btn" data-id="{{ product.id }}" onclick="toggleWish(event, {{ product.id }})" style="position:static;width:48px;height:48px">♡</button>
+                </div>
+                <p style="font-size:0.85rem">🌿 In stock · {{ product.stock }} available · Ships within 24 hours</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- REVIEWS -->
+<section class="section bg-beige">
+    <div class="container">
+        <div class="reveal">
+            <span class="eyebrow">Reviews</span>
+            <h2>What people are saying</h2>
+        </div>
+
+        <div class="review-list">
+            {% for r in reviews %}
+            <div class="review reveal">
+                <div class="top">
+                    <span class="author">{{ r.author or 'Customer' }}</span>
+                    <span class="stars">{{ '★' * (r.rating|round(0,'floor')|int) }}{{ '☆' * (5 - (r.rating|round(0,'floor')|int)) }}</span>
+                </div>
+                <p>{{ r.comment }}</p>
+            </div>
+            {% else %}
+            <p>Be the first to review this product.</p>
+            {% endfor %}
+        </div>
+
+        <div class="panel reveal" style="margin-top:34px;max-width:640px">
+            <h3>Write a review</h3>
+            <form onsubmit="submitReview(event, {{ product.id }})">
+                <div class="field">
+                    <label>Your rating</label>
+                    <div class="star-input">
+                        <input type="radio" name="rating" id="s5" value="5"><label for="s5">★</label>
+                        <input type="radio" name="rating" id="s4" value="4"><label for="s4">★</label>
+                        <input type="radio" name="rating" id="s3" value="3"><label for="s3">★</label>
+                        <input type="radio" name="rating" id="s2" value="2"><label for="s2">★</label>
+                        <input type="radio" name="rating" id="s1" value="1"><label for="s1">★</label>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Your review</label>
+                    <textarea id="review-comment" rows="3" placeholder="Tell us about your experience…"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit Review</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- RELATED -->
+{% if related %}
+<section class="section">
+    <div class="container">
+        <div class="text-center reveal"><span class="eyebrow">You may also love</span><h2>Complete your ritual</h2></div>
+        <div class="grid" style="margin-top:48px">
+            {% for p in related %}{{ product_card(p) }}{% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

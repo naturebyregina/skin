@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Your Cart — Nature by Regina{% endblock %}
+{% block content %}
+
+<section class="page-head">
+    <div class="container">
+        <span class="eyebrow">Almost yours</span>
+        <h1>Shopping Cart</h1>
+    </div>
+</section>
+
+<section class="section" style="padding-top:50px">
+    <div class="container">
+        <div id="cart-wrap">
+            <div class="empty-state"><div class="ic">🛒</div><p>Loading your cart…</p></div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+{% block scripts %}
+<script>
+function fmt(n){ return '₦' + Number(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
+function imgTag(src){ return (src && (src.startsWith('/') || src.startsWith('http'))) ? `<img src="${src}" alt="">` : src; }
+
+function renderCart(d){
+    const wrap = document.getElementById('cart-wrap');
+    if(!d.items.length){
+        wrap.innerHTML = `<div class="empty-state"><div class="ic">🛒</div><h3>Your cart is empty</h3>
+            <p>Discover our natural skincare collection.</p>
+            <a href="/shop" class="btn btn-primary" style="margin-top:20px">Start Shopping</a></div>`;
+        return;
+    }
+    let items = d.items.map(i => `
+        <div class="cart-item">
+            <a href="/product/${i.slug}" class="ci-thumb">${imgTag(i.image)}</a>
+            <div class="ci-info">
+                <h4><a href="/product/${i.slug}">${i.name}</a></h4>
+                <span class="ci-price">${fmt(i.price)}</span>
+            </div>
+            <div class="qty">
+                <button onclick="setQty(${i.id}, ${i.quantity-1})">−</button>
+                <span>${i.quantity}</span>
+                <button onclick="setQty(${i.id}, ${i.quantity+1})">+</button>
+            </div>
+            <strong style="min-width:90px;text-align:right;color:var(--green-800)">${fmt(i.price*i.quantity)}</strong>
+            <button class="ci-remove" onclick="setQty(${i.id}, 0)" aria-label="Remove">✕</button>
+        </div>`).join('');
+
+    wrap.innerHTML = `
+        <div class="cart-layout">
+            <div>${items}<a href="/shop" style="color:var(--green-700);font-size:0.9rem">← Continue shopping</a></div>
+            <div class="summary-card">
+                <h3>Order Summary</h3>
+                <div class="summary-row"><span>Subtotal</span><span>${fmt(d.subtotal)}</span></div>
+                <div class="summary-row"><span>VAT (7.5%)</span><span>${fmt(d.tax)}</span></div>
+                <div class="summary-row"><span>Shipping</span><span>${d.shipping ? fmt(d.shipping) : 'FREE'}</span></div>
+                <div class="summary-row total"><span>Total</span><span>${fmt(d.total)}</span></div>
+                <a href="/checkout" class="btn btn-primary btn-block" style="margin-top:22px">Proceed to Checkout</a>
+                ${d.subtotal < 80000 ? `<p style="font-size:0.8rem;text-align:center;margin-top:14px">Add ${fmt(80000-d.subtotal)} more for free shipping 🚚</p>` : ''}
+            </div>
+        </div>`;
+}
+
+function loadCart(){ fetch('/api/cart/get').then(r=>r.json()).then(renderCart); }
+function setQty(id, qty){
+    fetch('/api/cart/update',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({product_id:id, quantity:qty})})
+        .then(r=>r.json()).then(d=>{ renderCart(d); refreshCart(); });
+}
+loadCart();
+</script>
+{% endblock %}

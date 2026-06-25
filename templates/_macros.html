@@ -1,0 +1,25 @@
+{# Render an image path as <img>, or fall back to an emoji span #}
+{% macro media(image, alt='') -%}
+{%- if image and (image.startswith('/') or image.startswith('http')) -%}
+<img src="{{ image }}" alt="{{ alt }}" loading="lazy">
+{%- else -%}
+<span class="emoji">{{ image }}</span>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro product_card(p, delay='') %}
+<div class="card reveal {{ delay }}">
+    {% if p.badge %}<span class="badge">{{ p.badge }}</span>{% endif %}
+    <button class="wish-btn" data-id="{{ p.id }}" onclick="toggleWish(event, {{ p.id }})" aria-label="Add to wishlist">♡</button>
+    <a href="/product/{{ p.slug }}" class="thumb">{{ media(p.image, p.name) }}</a>
+    <div class="body">
+        <span class="cat">{{ p.category }}</span>
+        <h3><a href="/product/{{ p.slug }}">{{ p.name }}</a></h3>
+        <span class="stars">{{ '★' * (p.rating|round(0,'floor')|int) }}{{ '☆' * (5 - (p.rating|round(0,'floor')|int)) }} <span style="color:var(--muted)">{{ p.rating }}</span></span>
+        <div class="row">
+            <span class="price">₦{{ "{:,.0f}".format(p.price) }}</span>
+            <button class="add" onclick="addCart({{ p.id }})" aria-label="Add to cart">+</button>
+        </div>
+    </div>
+</div>
+{% endmacro %}

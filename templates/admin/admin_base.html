@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin — Nature by Regina{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="admin-body">
+    <div class="admin-shell">
+        <aside class="admin-sidebar">
+            <a href="/" class="admin-logo">🌿 Regina <span>Admin</span></a>
+            <nav class="admin-nav">
+                <a href="/admin" class="{{ 'active' if active == 'dashboard' }}">📊 Dashboard</a>
+                <a href="/admin/products" class="{{ 'active' if active == 'products' }}">🧴 Products</a>
+                <a href="/admin/orders" class="{{ 'active' if active == 'orders' }}">📦 Orders</a>
+                <a href="/admin/customers" class="{{ 'active' if active == 'customers' }}">👥 Customers</a>
+                <a href="/admin/testimonials" class="{{ 'active' if active == 'testimonials' }}">⭐ Testimonials</a>
+                <a href="/admin/media" class="{{ 'active' if active == 'media' }}">🖼️ Media Library</a>
+                <a href="/admin/ads" class="{{ 'active' if active == 'ads' }}">🎬 Ad Studio</a>
+                <a href="/admin/chats" class="{{ 'active' if active == 'chats' }}">💬 Chat Logs</a>
+                <a href="/admin/settings" class="{{ 'active' if active == 'settings' }}">⚙️ Site Settings</a>
+            </nav>
+            <div class="admin-side-foot">
+                <a href="/">← View store</a>
+                <a href="/logout">Logout</a>
+            </div>
+        </aside>
+
+        <div class="admin-main">
+            <header class="admin-topbar">
+                <button class="admin-burger" onclick="document.querySelector('.admin-sidebar').classList.toggle('open')">☰</button>
+                <h1>{% block heading %}Dashboard{% endblock %}</h1>
+                <span class="admin-badge">⚙ Admin</span>
+            </header>
+            <div class="admin-content">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,62 @@
+{% extends "admin/admin_base.html" %}
+{% set active = 'media' %}
+{% block title %}Media Library — Admin{% endblock %}
+{% block heading %}Media Library{% endblock %}
+{% block content %}
+
+<div class="admin-toolbar">
+    <p>{{ items|length }} item{{ 's' if items|length != 1 }} · host images & videos, copy their link, or delete</p>
+    <label class="btn btn-primary btn-sm" style="cursor:pointer">
+        ⬆ Upload Media
+        <input type="file" accept="image/*,video/*" style="display:none" onchange="uploadMedia(this)">
+    </label>
+</div>
+
+<div class="admin-card">
+    {% if items %}
+    <div class="media-grid" id="media-grid">
+        {% for m in items %}
+        <div class="media-item" id="media-{{ m.id }}">
+            <div class="media-thumb">
+                {% if m.type == 'video' %}<video src="{{ m.path }}" muted></video><span class="media-tag">▶ video</span>
+                {% else %}<img src="{{ m.path }}" alt="{{ m.name }}">{% endif %}
+            </div>
+            <div class="media-actions">
+                <button class="link-edit" onclick="copyPath('{{ m.path }}')">Copy link</button>
+                <button class="link-del" onclick="delMedia({{ m.id }})">Delete</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="admin-empty">No media yet. Upload your first image or video.</p>
+    {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function uploadMedia(input){
+    const file = input.files[0];
+    if(!file) return;
+    toast('Uploading…');
+    const fd = new FormData(); fd.append('file', file);
+    fetch('/api/admin/media/upload', {method:'POST', body: fd})
+        .then(r=>r.json()).then(d=>{
+            if(d.success){ toast('Uploaded 🌿'); setTimeout(()=>location.reload(), 700); }
+            else toast(d.error || 'Upload failed');
+        });
+}
+function copyPath(p){
+    const full = location.origin + p;
+    navigator.clipboard?.writeText(full);
+    toast('Link copied: ' + p);
+}
+function delMedia(id){
+    if(!confirm('Delete this media file? This cannot be undone.')) return;
+    fetch('/api/admin/media/'+id+'/delete', {method:'POST'})
+        .then(r=>r.json()).then(d=>{
+            if(d.success){ document.getElementById('media-'+id).remove(); toast('Deleted'); }
+        });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}FAQ — Nature by Regina{% endblock %}
+{% block content %}
+
+<section class="page-head has-bg" style="background-image:url('https://d8j0ntlcm91z4.cloudfront.net/user_3F6A4QnrUxEAuUqDhB4JNzu47Nf/hf_20260625_002252_45b85cc3-00af-4c38-af9f-26dd7586b365.jpeg')">
+    <div class="container">
+        <span class="eyebrow">Questions answered</span>
+        <h1>Frequently Asked</h1>
+    </div>
+</section>
+
+<section class="section" style="padding-top:50px">
+    <div class="container">
+        <div class="faq-list accordion reveal">
+            {% set faqs = [
+                ('Are your products 100% natural?', 'Yes. Every Nature by Regina product is handcrafted from natural, plant-based ingredients like shea butter, plantain ash, turmeric and botanical oils. We never use harsh synthetics.'),
+                ('How long does delivery take?', 'Local rider deliveries arrive in 1–2 days, interstate in 3–5 days, and air shipping in 1–3 days. International orders take 7–14 days. Every order comes with a tracking code.'),
+                ('Do you offer free shipping?', 'Yes — enjoy free shipping on all orders over ₦80,000. Below that, shipping is calculated by your chosen method at checkout.'),
+                ('Which products suit my skin type?', 'All of our products are formulated for every skin type. If you are unsure, chat with Regina\'s Team using the button in the corner and we will guide you to the perfect match.'),
+                ('How do I earn loyalty points?', 'You earn points on every purchase. Points unlock Bronze, Silver, Gold and Platinum tiers, each with its own perks — from free shipping to VIP gifts and bigger discounts.'),
+                ('Can I return a product?', 'If something is not right, reach out within 7 days of delivery and we will make it right. Because our products are personal-care items, unopened products are eligible for return.'),
+                ('Are your products tested on animals?', 'Never. We are proudly cruelty-free.')
+            ] %}
+            {% for q, a in faqs %}
+            <div class="acc-item {{ 'open' if loop.first }}">
+                <button class="acc-head" type="button">{{ q }} <span class="pm">+</span></button>
+                <div class="acc-body"><div class="inner">{{ a }}</div></div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="text-center" style="margin-top:50px">
+            <p>Still have questions?</p>
+            <a href="/contact" class="btn btn-primary" style="margin-top:14px">Contact Us</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

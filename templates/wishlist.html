@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import product_card %}
+{% block title %}Wishlist — Nature by Regina{% endblock %}
+{% block content %}
+
+<section class="page-head">
+    <div class="container">
+        <span class="eyebrow">Saved for later</span>
+        <h1>Your Wishlist</h1>
+    </div>
+</section>
+
+<section class="section" style="padding-top:50px">
+    <div class="container">
+        {% if products %}
+        <div class="grid">{% for p in products %}{{ product_card(p) }}{% endfor %}</div>
+        {% else %}
+        <div class="empty-state"><div class="ic">♡</div><h3>Nothing saved yet</h3>
+            <p>Tap the heart on any product to save it here.</p>
+            <a href="/shop" class="btn btn-primary" style="margin-top:20px">Browse Products</a></div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

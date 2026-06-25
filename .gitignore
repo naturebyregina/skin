@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
+
+# Local database (regenerates on first run with seed data)
+database.db
+*.sqlite3
+
+# Secrets / environment
+.env
+*.env
+
+# Customer-uploaded private files (do not publish)
+static/receipts/
+static/avatars/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/

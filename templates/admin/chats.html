@@ -1,0 +1,24 @@
+{% extends "admin/admin_base.html" %}
+{% set active = 'chats' %}
+{% block title %}Chat Logs — Admin{% endblock %}
+{% block heading %}Chat Logs{% endblock %}
+{% block content %}
+
+<div class="admin-toolbar"><p>Latest {{ msgs|length }} message{{ 's' if msgs|length != 1 }} from "Regina's Team" assistant</p></div>
+
+<div class="admin-card">
+    {% if msgs %}
+    <div class="chat-log">
+        {% for m in msgs %}
+        <div class="log-row {{ 'is-bot' if m.is_assistant else 'is-user' }}">
+            <div class="log-meta">
+                <strong>{{ "Regina's Team" if m.is_assistant else (m.first_name or 'Visitor') }}</strong>
+                <span class="muted-sm">{{ m.created_at[:16] }}</span>
+            </div>
+            <p>{{ m.message }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}<p class="admin-empty">No conversations yet.</p>{% endif %}
+</div>
+{% endblock %}

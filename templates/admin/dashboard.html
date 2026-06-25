@@ -1,0 +1,86 @@
+{% extends "admin/admin_base.html" %}
+{% from "_macros.html" import media %}
+{% set active = 'dashboard' %}
+{% block title %}Dashboard — Admin{% endblock %}
+{% block heading %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="admin-stats">
+    <div class="admin-stat"><div class="ic">💰</div><div class="v">₦{{ "{:,.0f}".format(stats.revenue) }}</div><div class="l">Total Revenue</div></div>
+    <div class="admin-stat"><div class="ic">📦</div><div class="v">{{ stats.orders }}</div><div class="l">Orders</div></div>
+    <div class="admin-stat"><div class="ic">👥</div><div class="v">{{ stats.customers }}</div><div class="l">Customers</div></div>
+    <div class="admin-stat"><div class="ic">🧴</div><div class="v">{{ stats.products }}</div><div class="l">Products</div></div>
+</div>
+
+<div class="admin-grid-2">
+    <div class="admin-card">
+        <h3>Recent Orders</h3>
+        {% if recent %}
+        <table class="admin-table">
+            <thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead>
+            <tbody>
+            {% for o in recent %}
+            <tr>
+                <td><a href="/admin/orders">{{ o.order_code }}</a></td>
+                <td>{{ o.first_name or 'Guest' }} {{ o.last_name or '' }}</td>
+                <td>₦{{ "{:,.0f}".format(o.total) }}</td>
+                <td><span class="status-pill status-{{ o.status }}">{{ o.status }}</span></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<p class="admin-empty">No orders yet.</p>{% endif %}
+    </div>
+
+    <div class="admin-card">
+        <h3>Orders by Status</h3>
+        <div class="bar-chart">
+            {% set maxn = (by_status | map(attribute='n') | max) if by_status else 1 %}
+            {% for s in by_status %}
+            <div class="bar-row">
+                <span class="bar-label">{{ s.status }}</span>
+                <div class="bar-track"><i style="width: {{ ((s.n / maxn) * 100)|round|int }}%"></i></div>
+                <span class="bar-val">{{ s.n }}</span>
+            </div>
+            {% else %}<p class="admin-empty">No data yet.</p>{% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="admin-grid-2">
+    <div class="admin-card">
+        <h3>Top Products</h3>
+        <table class="admin-table">
+            <thead><tr><th></th><th>Product</th><th>Sold</th><th>Revenue</th></tr></thead>
+            <tbody>
+            {% for t in top %}
+            <tr>
+                <td class="cell-img">{{ media(t.image, t.name) }}</td>
+                <td>{{ t.name }}</td>
+                <td>{{ t.sold }}</td>
+                <td>₦{{ "{:,.0f}".format(t.revenue) }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="admin-card">
+        <h3>Low Stock Alert</h3>
+        {% if low_stock %}
+        <table class="admin-table">
+            <thead><tr><th></th><th>Product</th><th>Stock</th></tr></thead>
+            <tbody>
+            {% for p in low_stock %}
+            <tr>
+                <td class="cell-img">{{ media(p.image, p.name) }}</td>
+                <td>{{ p.name }}</td>
+                <td><span class="stock-tag {{ 'low' if p.stock < 15 }}">{{ p.stock }} left</span></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<p class="admin-empty">All products well stocked. 🌿</p>{% endif %}
+    </div>
+</div>
+{% endblock %}
